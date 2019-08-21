@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -19,8 +18,10 @@ namespace Microsoft.Data.Sqlite
     /// </summary>
     public partial class SqliteConnection : DbConnection
     {
-        // TODO: The pool should be by connection string
-        // The Acquire action should require a connection string
+        internal string _defaultPoolConnectionString;
+
+        internal SqliteConnectionPool _defaultPool;
+
         internal static Dictionary<string, SqliteConnectionPool> _connections = new Dictionary<string, SqliteConnectionPool>();
 
         internal const string MainDatabaseName = "main";
@@ -46,12 +47,6 @@ namespace Microsoft.Data.Sqlite
         static SqliteConnection()
         {
             BundleInitializer.Initialize();
-
-            // Release all open connections when the host application is closed
-            //AppDomain.CurrentDomain.ProcessExit += (object sender, EventArgs e) =>
-            //{
-            //    // FreeHandles();
-            //};
         }
 
         /// <summary>
@@ -102,9 +97,18 @@ namespace Microsoft.Data.Sqlite
             // Can't reuse an in-memory database connection
             if (_connectionString.IndexOf(":memory:") < 0)
             {
-                if (!_connections.TryGetValue(_connectionString, out var pool))
+                SqliteConnectionPool pool;
+
+                if (_defaultPool != null && _connectionString == _defaultPoolConnectionString)
+                {
+                    pool = _defaultPool;
+                }
+                else if (!_connections.TryGetValue(_connectionString, out pool))
                 {
                     _connections[_connectionString] = pool = new SqliteConnectionPool(64);
+
+                    _defaultPoolConnectionString = _connectionString;
+                    _defaultPool = pool;
                 }
 
                 _handle = pool.Rent();
@@ -134,7 +138,12 @@ namespace Microsoft.Data.Sqlite
 
             _handle.Release();
 
-            if (_connections.TryGetValue(_connectionString, out var pool))
+            if (_defaultPool != null && _connectionString == _defaultPoolConnectionString)
+            {
+                _defaultPool.Return(_handle);
+                _handle = null;
+            }
+            else if (_connections.TryGetValue(_connectionString, out var pool))
             {
                 pool.Return(_handle);
                 _handle = null;
