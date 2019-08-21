@@ -30,6 +30,10 @@ namespace PerfSample
 #if DEBUG
             Console.WriteLine("WARNING! Using DEBUG build.");
 #endif
+            if (File.Exists("PerfSample.db"))
+            {
+                File.Delete("PerfSample.db");
+            }
 
             using (var connection = new SqliteConnection(ConnectionString))
             {
@@ -142,8 +146,7 @@ namespace PerfSample
             Console.SetCursorPosition(0, Console.CursorTop);
             Console.WriteLine($"{threadCount:D2} Threads, tps: {totalTps:F2}, stddev(w/o best+worst): {stdDev:F2}");
 
-
-            File.Delete("AsyncSample.db");
+            File.Delete("PerfSample.db");
         }
 
         public static async Task DoWorkAsync()
@@ -176,7 +179,17 @@ namespace PerfSample
                     }
                 }
 
+                CheckResults(results);
+
                 Program.IncrementCounter();
+            }
+        }
+
+        protected static void CheckResults(ICollection<Fortune> results)
+        {
+            if (results.Count != 12)
+            {
+                throw new InvalidOperationException($"Unexpected number of results! Expected 12 got {results.Count}");
             }
         }
 
