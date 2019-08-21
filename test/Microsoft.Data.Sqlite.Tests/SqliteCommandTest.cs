@@ -839,6 +839,7 @@ namespace Microsoft.Data.Sqlite
             }
             finally
             {
+                // SqliteConnection.FreeHandles();
                 File.Delete("busy.db");
             }
         }

@@ -55,6 +55,7 @@ Microsoft.Data.Sqlite.SqliteTransaction</Description>
     <Compile Update="SqliteCommand.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="SqliteConnectionHandle.cs" />
     <Compile Update="SqliteConnection.CreateAggregate.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
