@@ -57,10 +57,21 @@ namespace Microsoft.Data.Sqlite
         }
 
         /// <summary>
+        ///     Gets or sets a value indicating whether pooling is used or not.
+        /// </summary>
+        /// <value>Whether pooling is used or not.</value>
+        public static bool EnablePooling { get; set; } = true;
+
+        /// <summary>
         /// Frees all open connections from the pool.
         /// </summary>
         public static void FreeHandles()
         {
+            if (!EnablePooling)
+            {
+                return;
+            }
+
             lock (_connections)
             {
                 foreach (var pool in _connections.Values)
@@ -94,24 +105,27 @@ namespace Microsoft.Data.Sqlite
                 throw new InvalidOperationException(Resources.OpenRequiresSetConnectionString);
             }
 
-            // Can't reuse an in-memory database connection
-            if (_connectionString.IndexOf(":memory:") < 0)
+            if (EnablePooling)
             {
-                SqliteConnectionPool pool;
-
-                if (_defaultPool != null && _connectionString == _defaultPoolConnectionString)
+                // Can't reuse an in-memory database connection
+                if (_connectionString.IndexOf(":memory:") < 0)
                 {
-                    pool = _defaultPool;
-                }
-                else if (!_connections.TryGetValue(_connectionString, out pool))
-                {
-                    _connections[_connectionString] = pool = new SqliteConnectionPool(64);
+                    SqliteConnectionPool pool;
 
-                    _defaultPoolConnectionString = _connectionString;
-                    _defaultPool = pool;
-                }
+                    if (_defaultPool != null && _connectionString == _defaultPoolConnectionString)
+                    {
+                        pool = _defaultPool;
+                    }
+                    else if (!_connections.TryGetValue(_connectionString, out pool))
+                    {
+                        _connections[_connectionString] = pool = new SqliteConnectionPool(64);
 
-                _handle = pool.Rent();
+                        _defaultPoolConnectionString = _connectionString;
+                        _defaultPool = pool;
+                    }
+
+                    _handle = pool.Rent();
+                }
             }
 
             if (_handle == null)
@@ -138,12 +152,12 @@ namespace Microsoft.Data.Sqlite
 
             _handle.Release();
 
-            if (_defaultPool != null && _connectionString == _defaultPoolConnectionString)
+            if (EnablePooling && _defaultPool != null && _connectionString == _defaultPoolConnectionString)
             {
                 _defaultPool.Return(_handle);
                 _handle = null;
             }
-            else if (_connections.TryGetValue(_connectionString, out var pool))
+            else if (EnablePooling && _connections.TryGetValue(_connectionString, out var pool))
             {
                 pool.Return(_handle);
                 _handle = null;

@@ -29,10 +29,13 @@ namespace PerfSample
 #if DEBUG
             Console.WriteLine("WARNING! Using DEBUG build.");
 #endif
+
             if (File.Exists("PerfSample.db"))
             {
                 File.Delete("PerfSample.db");
             }
+
+            // SqliteConnection.EnablePooling = false;
 
             using (var connection = new SqliteConnection(ConnectionString))
             {
