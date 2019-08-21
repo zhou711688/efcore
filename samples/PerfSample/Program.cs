@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -11,8 +10,8 @@ namespace PerfSample
 {
     class Program
     {
-        private const int DefaultThreadCount = 64;
-        private const int DefaultExecutionTimeSeconds = 10;
+        private const int DefaultThreadCount = 32;
+        private const int DefaultExecutionTimeSeconds = 5;
         private const int WarmupTimeSeconds = 3;
         private const string ConnectionString = "Data Source=PerfSample.db";
         public const string TestQuery = "SELECT id, message FROM fortune";
@@ -145,6 +144,9 @@ namespace PerfSample
 
             Console.SetCursorPosition(0, Console.CursorTop);
             Console.WriteLine($"{threadCount:D2} Threads, tps: {totalTps:F2}, stddev(w/o best+worst): {stdDev:F2}");
+
+            // Dispose all the pooled connections
+            SqliteConnection.FreeHandles();
 
             File.Delete("PerfSample.db");
         }

@@ -21,7 +21,7 @@ namespace Microsoft.Data.Sqlite
     {
         // TODO: The pool should be by connection string
         // The Acquire action should require a connection string
-        internal static Dictionary<string, ConcurrentStack<SqliteConnectionHandle>> _connections = new Dictionary<string, ConcurrentStack<SqliteConnectionHandle>>();
+        internal static Dictionary<string, SqliteConnectionPool> _connections = new Dictionary<string, SqliteConnectionPool>();
 
         internal const string MainDatabaseName = "main";
 
@@ -66,16 +66,11 @@ namespace Microsoft.Data.Sqlite
         /// </summary>
         public static void FreeHandles()
         {
-            lock (typeof(SqliteConnection))
+            lock (_connections)
             {
-                foreach (var pools in _connections.Values)
+                foreach (var pool in _connections.Values)
                 {
-                    foreach (var handle in pools)
-                    {
-                        handle.Dispose();
-                    }
-
-                    pools.Clear();
+                    pool.Dispose();
                 }
 
                 _connections.Clear();
@@ -109,10 +104,10 @@ namespace Microsoft.Data.Sqlite
             {
                 if (!_connections.TryGetValue(_connectionString, out var pool))
                 {
-                    _connections[_connectionString] = pool = new ConcurrentStack<SqliteConnectionHandle>();
+                    _connections[_connectionString] = pool = new SqliteConnectionPool(64);
                 }
 
-                pool.TryPop(out _handle);
+                _handle = pool.Rent();
             }
 
             if (_handle == null)
@@ -141,7 +136,7 @@ namespace Microsoft.Data.Sqlite
 
             if (_connections.TryGetValue(_connectionString, out var pool))
             {
-                pool.Push(_handle);
+                pool.Return(_handle);
                 _handle = null;
             }
             else
