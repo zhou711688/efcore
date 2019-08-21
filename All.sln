@@ -137,6 +137,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.Benchmarks", "benchm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EF.Benchmarks.Shared", "benchmark\EF.Benchmarks.Shared\EF.Benchmarks.Shared.csproj", "{BFC26566-4C6D-4904-A559-8FFE09369901}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfSample", "samples\PerfSample\PerfSample.csproj", "{4D1E4484-E77D-4D57-AAA4-AABB838D279D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -367,6 +369,10 @@ Global
 		{BFC26566-4C6D-4904-A559-8FFE09369901}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFC26566-4C6D-4904-A559-8FFE09369901}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BFC26566-4C6D-4904-A559-8FFE09369901}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1E4484-E77D-4D57-AAA4-AABB838D279D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1E4484-E77D-4D57-AAA4-AABB838D279D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1E4484-E77D-4D57-AAA4-AABB838D279D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1E4484-E77D-4D57-AAA4-AABB838D279D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -428,6 +434,7 @@ Global
 		{678AB38D-B27C-4690-A3F9-2D2488391658} = {293B4F79-3CB9-402A-A74C-B8108C41A7CF}
 		{2642F4F0-69BE-4C43-94B7-B298FEC87D89} = {293B4F79-3CB9-402A-A74C-B8108C41A7CF}
 		{BFC26566-4C6D-4904-A559-8FFE09369901} = {293B4F79-3CB9-402A-A74C-B8108C41A7CF}
+		{4D1E4484-E77D-4D57-AAA4-AABB838D279D} = {C41FD56B-38CD-40E3-89E6-071A6C58E36C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {285A5EB4-BCF4-40EB-B9E1-DF6DBCB5E705}
