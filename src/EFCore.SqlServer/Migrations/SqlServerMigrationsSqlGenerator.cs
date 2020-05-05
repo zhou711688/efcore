@@ -486,7 +486,40 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                 throw new ArgumentException(SqlServerStrings.CannotProduceUnterminatedSQLWithComments(nameof(CreateTableOperation)));
             }
 
-            base.Generate(operation, model, builder, terminate: false);
+            var temporal = IsTemporal(operation);
+            if (temporal)
+            {
+                builder
+                    .Append("CREATE TABLE ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
+                    .AppendLine(" (");
+
+                using (builder.Indent())
+                {
+                    CreateTableColumns(operation, model, builder);
+                    CreateTableConstraints(operation, model, builder);
+                    builder.AppendLine();
+
+                    builder.AppendLine(", SysStartTime DATETIME2 GENERATED ALWAYS AS ROW START NOT NULL");
+                    builder.AppendLine(", SysEndTime DATETIME2 GENERATED ALWAYS AS ROW END NOT NULL");
+                    builder.AppendLine(", PERIOD FOR SYSTEM_TIME(SysStartTime, SysEndTime)");
+                }
+
+                builder.Append(")");
+
+                using (builder.Indent())
+                {
+                    builder.AppendLine("WITH");
+                    using (builder.Indent())
+                    {
+                        builder.Append("(SYSTEM_VERSIONING = ON)");
+                    }
+                }
+            }
+            else
+            {
+                base.Generate(operation, model, builder, terminate: false);
+            }
 
             var memoryOptimized = IsMemoryOptimized(operation);
             if (memoryOptimized)
@@ -1911,5 +1944,12 @@ namespace Microsoft.EntityFrameworkCore.Migrations
             => operation[SqlServerAnnotationNames.Identity] != null
                 || operation[SqlServerAnnotationNames.ValueGenerationStrategy] as SqlServerValueGenerationStrategy?
                 == SqlServerValueGenerationStrategy.IdentityColumn;
+
+        private bool IsTemporal(Annotatable annotatable, IModel model, string schema, string tableName)
+            => annotatable[SqlServerAnnotationNames.Temporal] as bool?
+                ?? model?.GetRelationalModel().FindTable(tableName, schema)?[SqlServerAnnotationNames.Temporal] as bool? == true;
+
+        private static bool IsTemporal(Annotatable annotatable)
+            => annotatable[SqlServerAnnotationNames.Temporal] as bool? == true;
     }
 }

@@ -113,5 +113,33 @@ namespace Microsoft.EntityFrameworkCore
 
             return entityTypeBuilder.CanSetAnnotation(SqlServerAnnotationNames.MemoryOptimized, memoryOptimized, fromDataAnnotation);
         }
+
+        /// <summary>
+        ///     Configures the table that the entity maps to making it temporal.
+        /// </summary>
+        /// <param name="entityTypeBuilder"> The builder for the entity type being configured. </param>
+        /// <param name="temporal">A value indicating whether the table is temporal.</param>
+        /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+        public static EntityTypeBuilder IsTemporal(
+            [NotNull] this EntityTypeBuilder entityTypeBuilder, bool temporal = true)
+        {
+            Check.NotNull(entityTypeBuilder, nameof(entityTypeBuilder));
+
+            entityTypeBuilder.Metadata.SetIsTemporal(temporal);
+
+            return entityTypeBuilder;
+        }
+
+        /// <summary>
+        ///     Configures the table that the entity maps to making it temporal.
+        /// </summary>
+        /// <typeparam name="TEntity"> The entity type being configured. </typeparam>
+        /// <param name="entityTypeBuilder"> The builder for the entity type being configured. </param>
+        /// <param name="temporal">A value indicating whether the table is temporal.</param>
+        /// <returns> The same builder instance so that multiple calls can be chained. </returns>
+        public static EntityTypeBuilder<TEntity> IsTemporal<TEntity>(
+            [NotNull] this EntityTypeBuilder<TEntity> entityTypeBuilder, bool temporal = true)
+            where TEntity : class
+            => (EntityTypeBuilder<TEntity>)IsTemporal((EntityTypeBuilder)entityTypeBuilder, temporal);
     }
 }

@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query.Internal;
@@ -574,7 +575,7 @@ ORDER BY [c].[FirstName], [c].[LastName], [o].[Id]");
             using (CreateDatabase925())
             {
                 using var ctx = new MyContext925(_options);
-                var query = ctx.Orders.Include(o => o.Customer);
+                var query = ctx.Orders.Include<Order, Customer>(o => o.Customer);
                 var result = query.ToList();
 
                 Assert.Equal(5, result.Count);
@@ -2280,7 +2281,7 @@ WHERE [e].[Name] IS NULL");
             using (CreateDatabase9202())
             {
                 using var context = new MyContext9202(_options);
-                var query = context.Movies.Include(m => m.Cast);
+                var query = context.Movies.Include<Movie9202, List<Actor9202>>(m => m.Cast);
                 var result = query.ToList();
 
                 Assert.Single(result);
@@ -4068,7 +4069,7 @@ FROM [Prices] AS [p]");
             using (CreateDatabase11944())
             {
                 using var context = new MyContext11944(_options);
-                var query = context.Schools.Include(s => ((ElementarySchool11944)s).Students);
+                var query = context.Schools.Include<School11944, List<Student11944>>(s => ((ElementarySchool11944)s).Students);
                 var result = query.ToList();
 
                 Assert.Equal(2, result.Count);
@@ -5804,7 +5805,7 @@ FROM [Blogs] AS [b]");
             {
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .FirstAsync<PersonView17644>();
 
                 AssertSql(
@@ -5821,7 +5822,7 @@ WHERE [p].[Age] >= 21");
             {
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .FirstOrDefaultAsync<PersonView17644>();
 
                 AssertSql(
@@ -5838,7 +5839,7 @@ WHERE [p].[Age] >= 21");
             {
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .SingleAsync<PersonView17644>();
 
                 AssertSql(
@@ -5855,7 +5856,7 @@ WHERE [p].[Age] >= 21");
             {
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .SingleOrDefaultAsync<PersonView17644>();
 
                 AssertSql(
@@ -5873,7 +5874,7 @@ WHERE [p].[Age] >= 21");
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
                     .OrderBy(p => p.Id)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .LastAsync<PersonView17644>();
 
                 AssertSql(
@@ -5892,7 +5893,7 @@ ORDER BY [p].[Id] DESC");
                 using var context = new MyContext17644(_options);
                 var personsToFind = await context.Persons.Where(p => p.Age >= 21)
                     .OrderBy(p => p.Id)
-                    .Select(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age })
+                    .Select((Expression<Func<Person17644, PersonDetailView17644>>)(p => new PersonDetailView17644 { Name = p.Name, Age = p.Age }))
                     .LastOrDefaultAsync<PersonView17644>();
 
                 AssertSql(
@@ -7275,6 +7276,96 @@ WHERE [e].[Id] = CAST(1 AS bigint)");
         }
 
         #endregion
+
+
+        [ConditionalFact]
+        public virtual void TemportalTest()
+        {
+            using (var ctx = new MyContext())
+            {
+                //var blogs = ctx.Blogs.ToList();
+                //blogs[0].Name = "Fubar";
+                //ctx.SaveChanges();
+
+
+
+                //var blogs = ctx.Blogs.Include(x => x.Posts).ToList();
+                //ctx.Blogs.Remove(blogs[1]);
+                //ctx.SaveChanges();
+
+
+
+                //var blogs = ctx.Blogs.Include(x => x.Posts).ToList();
+                //blogs[1].Posts[0].Blog = blogs[0];
+                //blogs[1].Posts[1].Blog = blogs[0];
+                //blogs[1].Posts[2].Blog = blogs[0];
+
+                //ctx.SaveChanges();
+
+
+
+
+
+                //ctx.Database.EnsureDeleted();
+                //ctx.Database.EnsureCreated();
+
+                //var p11 = new TemporalPost { Id = 11, Name = "p11" };
+                //var p12 = new TemporalPost { Id = 12, Name = "p12" };
+                //var p21 = new TemporalPost { Id = 21, Name = "p21" };
+                //var p22 = new TemporalPost { Id = 22, Name = "p22" };
+                //var p23 = new TemporalPost { Id = 23, Name = "p23" };
+
+                //var b1 = new TemporalBlog { Id = 1, Name = "b1", Posts = new List<TemporalPost> { p11, p12 } };
+                //var b2 = new TemporalBlog { Id = 2, Name = "b2", Posts = new List<TemporalPost> { p21, p22, p23 } };
+
+                //ctx.Blogs.AddRange(b1, b2);
+                //ctx.Posts.AddRange(p11, p12, p21, p22, p23);
+                //ctx.SaveChanges();
+
+
+
+
+                var dateTime = DateTime.Parse("2020-04-29 20:45:10");
+                var query = ctx.Posts.SystemTimeAsOf(dateTime).Where(p => p.Blog.Name != "Foo").ToList();
+            }
+        }
+
+        public class MyContext : DbContext
+        {
+            public DbSet<TemporalBlog> Blogs { get; set; }
+            public DbSet<TemporalPost> Posts { get; set; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder)
+            {
+                modelBuilder.Entity<TemporalBlog>().IsTemporal();
+                modelBuilder.Entity<TemporalBlog>().Property(x => x.Id).ValueGeneratedNever();
+                    
+                modelBuilder.Entity<TemporalPost>().IsTemporal();
+                modelBuilder.Entity<TemporalPost>().Property(x => x.Id).ValueGeneratedNever();
+
+                modelBuilder.Entity<TemporalBlog>().HasMany(x => x.Posts).WithOne(x => x.Blog).IsRequired().OnDelete(DeleteBehavior.NoAction);
+            }
+
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+            {
+                optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=TemporalRepro;Trusted_Connection=True;MultipleActiveResultSets=true");
+            }
+        }
+
+        public class TemporalBlog
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public List<TemporalPost> Posts { get; set; }
+
+        }
+
+        public class TemporalPost
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public TemporalBlog Blog { get; set; }
+        }
 
         private DbContextOptions _options;
 

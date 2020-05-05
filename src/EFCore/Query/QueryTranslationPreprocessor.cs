@@ -1,8 +1,10 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
 
@@ -27,12 +29,28 @@ namespace Microsoft.EntityFrameworkCore.Query
         public QueryTranslationPreprocessor(
             [NotNull] QueryTranslationPreprocessorDependencies dependencies,
             [NotNull] QueryCompilationContext queryCompilationContext)
+            : this(dependencies, queryCompilationContext, (qre, et) => new QueryRootExpression(et))
+        {
+        }
+
+        /// <summary>
+        ///     Creates a new instance of the <see cref="QueryTranslationPreprocessor" /> class.
+        /// </summary>
+        /// <param name="dependencies"> Parameter object containing dependencies for this class. </param>
+        /// <param name="queryCompilationContext"> The query compilation context object to use. </param>
+        /// <param name="queryRootCreator"> TODO </param>
+        protected QueryTranslationPreprocessor(
+            [NotNull] QueryTranslationPreprocessorDependencies dependencies,
+            [NotNull] QueryCompilationContext queryCompilationContext,
+            [NotNull] Func<QueryRootExpression, IEntityType, QueryRootExpression> queryRootCreator)
         {
             Check.NotNull(dependencies, nameof(dependencies));
             Check.NotNull(queryCompilationContext, nameof(queryCompilationContext));
+            Check.NotNull(queryRootCreator, nameof(queryRootCreator));
 
             Dependencies = dependencies;
             QueryCompilationContext = queryCompilationContext;
+            QueryRootCreator = queryRootCreator;
         }
 
         /// <summary>
@@ -44,6 +62,11 @@ namespace Microsoft.EntityFrameworkCore.Query
         ///     The query compilation context object for current compilation.
         /// </summary>
         protected virtual QueryCompilationContext QueryCompilationContext { get; }
+
+        /// <summary>
+        ///     TODO
+        /// </summary>
+        protected Func<QueryRootExpression, IEntityType, QueryRootExpression> QueryRootCreator { get; }
 
         /// <summary>
         ///     Applies preprocessing transformations to the query.
@@ -58,7 +81,7 @@ namespace Microsoft.EntityFrameworkCore.Query
             query = NormalizeQueryableMethod(query);
             query = new NullCheckRemovingExpressionVisitor().Visit(query);
             query = new SubqueryMemberPushdownExpressionVisitor(QueryCompilationContext.Model).Visit(query);
-            query = new NavigationExpandingExpressionVisitor(this, QueryCompilationContext, Dependencies.EvaluatableExpressionFilter)
+            query = new NavigationExpandingExpressionVisitor(this, QueryCompilationContext, Dependencies.EvaluatableExpressionFilter, QueryRootCreator)
                 .Expand(query);
             query = new QueryOptimizingExpressionVisitor().Visit(query);
 

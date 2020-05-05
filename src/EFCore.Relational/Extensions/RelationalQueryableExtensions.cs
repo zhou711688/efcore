@@ -151,5 +151,33 @@ namespace Microsoft.EntityFrameworkCore
                 sql,
                 Expression.Constant(arguments));
         }
+
+        /// <summary>
+        ///     TODO
+        /// </summary>
+        public static IQueryable<TEntity> SystemTimeAsOf<TEntity>(
+            [NotNull] this IQueryable<TEntity> source,
+            DateTime pointInTime)
+        {
+            Check.NotNull(source, nameof(source));
+
+            var queryableSource = (IQueryable)source;
+            return queryableSource.Provider.CreateQuery<TEntity>(
+                GenerateTemporalQueryRoot(
+                    queryableSource,
+                    pointInTime));
+        }
+
+        private static TemporalQueryRootExpression GenerateTemporalQueryRoot(
+            IQueryable source,
+            DateTime pointInTime)
+        {
+            var queryRootExpression = (QueryRootExpression)source.Expression;
+
+            return new TemporalQueryRootExpression(
+                queryRootExpression.QueryProvider,
+                queryRootExpression.EntityType,
+                pointInTime);
+        }
     }
 }

@@ -14,7 +14,12 @@ namespace Microsoft.EntityFrameworkCore.Query
             [NotNull] QueryTranslationPreprocessorDependencies dependencies,
             [NotNull] RelationalQueryTranslationPreprocessorDependencies relationalDependencies,
             [NotNull] QueryCompilationContext queryCompilationContext)
-            : base(dependencies, queryCompilationContext)
+            : base(
+                  dependencies,
+                  queryCompilationContext,
+                  (qre, et) => qre is TemporalQueryRootExpression tqre
+                    ? new TemporalQueryRootExpression(et, tqre.PointInTime)
+                    : new QueryRootExpression(et))
         {
             Check.NotNull(relationalDependencies, nameof(relationalDependencies));
 

@@ -8,7 +8,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Utilities;
@@ -232,6 +231,9 @@ namespace Microsoft.EntityFrameworkCore.Query
 
         protected override Expression VisitFromSql(FromSqlExpression fromSqlExpression)
             => Check.NotNull(fromSqlExpression, nameof(fromSqlExpression));
+
+        protected override Expression VisitTemporalTable(TemporalTableExpression temporalTableExpression)
+            => Check.NotNull(temporalTableExpression, nameof(temporalTableExpression));
 
         protected override Expression VisitIn(InExpression inExpression)
         {

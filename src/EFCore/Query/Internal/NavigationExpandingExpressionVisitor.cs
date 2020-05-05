@@ -66,6 +66,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             = new Dictionary<IEntityType, LambdaExpression>();
 
         private readonly Parameters _parameters = new Parameters();
+        private readonly Func<QueryRootExpression, IEntityType, QueryRootExpression> _queryRootCreator;
 
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -76,11 +77,13 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         public NavigationExpandingExpressionVisitor(
             [NotNull] QueryTranslationPreprocessor queryTranslationPreprocessor,
             [NotNull] QueryCompilationContext queryCompilationContext,
-            [NotNull] IEvaluatableExpressionFilter evaluatableExpressionFilter)
+            [NotNull] IEvaluatableExpressionFilter evaluatableExpressionFilter,
+            [NotNull] Func<QueryRootExpression, IEntityType, QueryRootExpression> queryRootCreator)
         {
             _queryTranslationPreprocessor = queryTranslationPreprocessor;
             _queryCompilationContext = queryCompilationContext;
-            _pendingSelectorExpandingExpressionVisitor = new PendingSelectorExpandingExpressionVisitor(this);
+            _queryRootCreator = queryRootCreator;
+            _pendingSelectorExpandingExpressionVisitor = new PendingSelectorExpandingExpressionVisitor(this, _queryRootCreator);
             _subqueryMemberPushdownExpressionVisitor = new SubqueryMemberPushdownExpressionVisitor(queryCompilationContext.Model);
             _nullCheckRemovingExpressionVisitor = new NullCheckRemovingExpressionVisitor();
             _reducingExpressionVisitor = new ReducingExpressionVisitor();
@@ -106,7 +109,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         public virtual Expression Expand([NotNull] Expression query)
         {
             var result = Visit(query);
-            result = new PendingSelectorExpandingExpressionVisitor(this, applyIncludes: true).Visit(result);
+            result = new PendingSelectorExpandingExpressionVisitor(this, _queryRootCreator, applyIncludes: true).Visit(result);
             result = Reduce(result);
 
             var dbContextOnQueryContextPropertyAccess =
@@ -218,7 +221,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             {
                 // This is FirstOrDefault.Member
                 // due to SubqueryMemberPushdown, this may be collection navigation which was not pushed down
-                var expandedExpression = new ExpandingExpressionVisitor(this, navigationExpansionExpression).Visit(updatedExpression);
+                var expandedExpression = new ExpandingExpressionVisitor(this, navigationExpansionExpression, _queryRootCreator).Visit(updatedExpression);
                 if (expandedExpression != updatedExpression)
                 {
                     updatedExpression = Visit(expandedExpression);
@@ -686,10 +689,47 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 newStructure = Expression.Default(castType);
             }
 
-            var navigationTree = new NavigationTreeExpression(newStructure);
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            qref.Visit(source.Source);
+            var navigationTree = new NavigationTreeExpression(newStructure, qref.QueryRootExpression);
             var parameterName = GetParameterName("e");
 
             return new NavigationExpansionExpression(result, navigationTree, navigationTree, parameterName);
+        }
+
+        private class QueryRootExpressionFinder : ExpressionVisitor
+        {
+            public QueryRootExpression QueryRootExpression { get; private set; }
+
+            public override Expression Visit(Expression node)
+                => QueryRootExpression != null
+                ? node
+                : base.Visit(node);
+
+            protected override Expression VisitExtension(Expression node)
+            {
+                if (node is QueryRootExpression queryRootExpression)
+                {
+                    QueryRootExpression = queryRootExpression;
+
+                    return node;
+                }
+                else if (node is NavigationTreeExpression navigationTreeExpression)
+                {
+                    QueryRootExpression = navigationTreeExpression.QueryRootExpression;
+
+                    return node;
+                }
+                else if (node is NavigationExpansionExpression navigationExpansionExpression)
+                {
+                    Visit(navigationExpansionExpression.Source);
+
+                    return node;
+                }
+
+                return base.VisitExtension(node);
+            }
         }
 
         private Expression ProcessContains(NavigationExpansionExpression source, Expression item)
@@ -720,7 +760,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
             var result = Expression.Call(genericMethod.MakeGenericMethod(queryable.Type.TryGetSequenceType()), queryable);
 
-            var navigationTree = new NavigationTreeExpression(newStructure);
+
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            qref.Visit(source.Source);
+            var navigationTree = new NavigationTreeExpression(newStructure, qref.QueryRootExpression);
             var parameterName = GetParameterName("e");
 
             return new NavigationExpansionExpression(result, navigationTree, navigationTree, parameterName);
@@ -788,7 +832,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                     Expression.Quote(elementSelector),
                     Expression.Quote(Visit(resultSelector)));
 
-            var navigationTree = new NavigationTreeExpression(Expression.Default(result.Type.TryGetSequenceType()));
+
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            qref.Visit(source.Source);
+            var navigationTree = new NavigationTreeExpression(Expression.Default(result.Type.TryGetSequenceType()), qref.QueryRootExpression);
             var parameterName = GetParameterName("e");
 
             return new NavigationExpansionExpression(result, navigationTree, navigationTree, parameterName);
@@ -1036,7 +1084,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 source.PendingSelector,
                 keySelector.Body);
 
-            lambdaBody = new ExpandingExpressionVisitor(this, source).Visit(lambdaBody);
+            lambdaBody = new ExpandingExpressionVisitor(this, source, _queryRootCreator).Visit(lambdaBody);
             lambdaBody = _subqueryMemberPushdownExpressionVisitor.Visit(lambdaBody);
 
             if (thenBy)
@@ -1075,7 +1123,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                     source.Source,
                     Expression.Quote(selectorLambda));
 
-                var navigationTree = new NavigationTreeExpression(Expression.Default(selectorLambda.ReturnType));
+
+                // TODO: hack
+                var qref = new QueryRootExpressionFinder();
+                qref.Visit(source.Source);
+                var navigationTree = new NavigationTreeExpression(Expression.Default(selectorLambda.ReturnType), qref.QueryRootExpression);
                 var parameterName = GetParameterName("e");
 
                 return new NavigationExpansionExpression(newSource, navigationTree, navigationTree, parameterName);
@@ -1103,7 +1155,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             if (collectionSelectorBody is NavigationExpansionExpression collectionSource)
             {
                 collectionSource = (NavigationExpansionExpression)_pendingSelectorExpandingExpressionVisitor.Visit(collectionSource);
-                var innerTree = new NavigationTreeExpression(SnapshotExpression(collectionSource.PendingSelector));
+
+                // TODO: hack
+                var qref = new QueryRootExpressionFinder();
+                qref.Visit(source.Source);
+                var innerTree = new NavigationTreeExpression(SnapshotExpression(collectionSource.PendingSelector), qref.QueryRootExpression);
                 collectionSelector = GenerateLambda(collectionSource, source.CurrentParameter);
                 var collectionElementType = collectionSelector.ReturnType.TryGetSequenceType();
 
@@ -1179,8 +1235,22 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 genericMethod.MakeGenericMethod(outerType.IsAssignableFrom(innerType) ? outerType : innerType),
                 outerQueryable,
                 innerQueryable);
+
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            if (outerType.IsAssignableFrom(innerType))
+            {
+                qref.Visit(outerSource.Source);
+            }
+            else
+            {
+                qref.Visit(innerSource.Source);
+            }
+
+            // TODO: which one?
             var navigationTree = new NavigationTreeExpression(
-                outerType.IsAssignableFrom(innerType) ? outerTreeStructure : innerTreeStructure);
+                outerType.IsAssignableFrom(innerType) ? outerTreeStructure : innerTreeStructure,
+                qref.QueryRootExpression);
             var parameterName = GetParameterName("e");
 
             return new NavigationExpansionExpression(result, navigationTree, navigationTree, parameterName);
@@ -1210,7 +1280,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                         methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(queryableElementType),
                         new[] { queryable }.Concat(methodCallExpression.Arguments.Skip(1).Select(e => Visit(e))));
 
-                    var navigationTree = new NavigationTreeExpression(newStructure);
+                    var navigationTree = new NavigationTreeExpression(newStructure, (QueryRootExpression)source.Source);
                     var parameterName = GetParameterName("e");
 
                     return new NavigationExpansionExpression(result, navigationTree, navigationTree, parameterName);
@@ -1564,7 +1634,10 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             var entityReference = new EntityReference(entityType);
             PopulateEagerLoadedNavigations(entityReference.IncludePaths);
 
-            var currentTree = new NavigationTreeExpression(entityReference);
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            qref.Visit(sourceExpression);
+            var currentTree = new NavigationTreeExpression(entityReference, qref.QueryRootExpression);
             var parameterName = GetParameterName(entityType.ShortName()[0].ToString().ToLower());
 
             return new NavigationExpansionExpression(sourceExpression, currentTree, currentTree, parameterName);
@@ -1575,7 +1648,11 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         {
             var parameterName = GetParameterName("o");
             var entityReference = ownedNavigationReference.EntityReference;
-            var currentTree = new NavigationTreeExpression(entityReference);
+
+            // TODO: hack
+            var qref = new QueryRootExpressionFinder();
+            qref.Visit(sourceExpression);
+            var currentTree = new NavigationTreeExpression(entityReference, qref.QueryRootExpression);
 
             return new NavigationExpansionExpression(sourceExpression, currentTree, currentTree, parameterName);
         }
@@ -1583,7 +1660,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         private Expression ExpandNavigationsForSource(NavigationExpansionExpression source, Expression expression)
         {
             expression = _removeRedundantNavigationComparisonExpressionVisitor.Visit(expression);
-            expression = new ExpandingExpressionVisitor(this, source).Visit(expression);
+            expression = new ExpandingExpressionVisitor(this, source, _queryRootCreator).Visit(expression);
             expression = _subqueryMemberPushdownExpressionVisitor.Visit(expression);
             expression = Visit(expression);
             expression = _pendingSelectorExpandingExpressionVisitor.Visit(expression);

@@ -103,6 +103,14 @@ namespace Microsoft.EntityFrameworkCore.Query
 
                     return CreateShapedQueryExpression(entityType, queryExpression);
 
+                case TemporalQueryRootExpression temporalQueryRootExpression:
+                    var table = new TemporalTableExpression(
+                        temporalQueryRootExpression.EntityType.GetViewOrTableMappings().Single().Table,
+                        temporalQueryRootExpression.PointInTime);
+                    var selectExpression = _sqlExpressionFactory.Select(temporalQueryRootExpression.EntityType, table);
+
+                    return CreateShapedQueryExpression(temporalQueryRootExpression.EntityType, selectExpression);
+
                 default:
                     return base.VisitExtension(extensionExpression);
             }

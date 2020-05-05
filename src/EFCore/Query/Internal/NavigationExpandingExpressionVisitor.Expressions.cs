@@ -265,16 +265,22 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         /// </summary>
         private sealed class NavigationTreeExpression : NavigationTreeNode, IPrintableExpression
         {
-            public NavigationTreeExpression(Expression value)
+            public NavigationTreeExpression(Expression value, QueryRootExpression queryRootExpression)
                 : base(null, null)
             {
                 Value = value;
+                QueryRootExpression = queryRootExpression;
             }
 
             /// <summary>
             ///     Either <see cref="NewExpression"/> or <see cref="EntityReference"/>.
             /// </summary>
             public Expression Value { get; private set; }
+
+            /// <summary>
+            ///     TODO
+            /// </summary>
+            public QueryRootExpression QueryRootExpression { get; private set; }
 
             protected override Expression VisitChildren(ExpressionVisitor visitor)
             {

@@ -50,6 +50,22 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="entityType"> The entity type. </param>
         /// <returns> The configuration source for the memory-optimized setting. </returns>
         public static ConfigurationSource? GetIsMemoryOptimizedConfigurationSource([NotNull] this IConventionEntityType entityType)
-            => entityType.FindAnnotation(SqlServerAnnotationNames.MemoryOptimized)?.GetConfigurationSource();
+            => entityType.FindAnnotation(SqlServerAnnotationNames.Temporal)?.GetConfigurationSource();
+
+        /// <summary>
+        ///     Returns a value indicating whether the entity type is mapped to a temporal table.
+        /// </summary>
+        /// <param name="entityType"> The entity type. </param>
+        /// <returns> <c>true</c> if the entity type is mapped to a memory-optimized table. </returns>
+        public static bool IsTemporal([NotNull] this IEntityType entityType)
+            => entityType[SqlServerAnnotationNames.Temporal] as bool? ?? false;
+
+        /// <summary>
+        ///     Sets a value indicating whether the entity type is mapped to temporal table.
+        /// </summary>
+        /// <param name="entityType"> The entity type. </param>
+        /// <param name="temporal"> The value to set. </param>
+        public static void SetIsTemporal([NotNull] this IMutableEntityType entityType, bool temporal)
+            => entityType.SetOrRemoveAnnotation(SqlServerAnnotationNames.Temporal, temporal);
     }
 }

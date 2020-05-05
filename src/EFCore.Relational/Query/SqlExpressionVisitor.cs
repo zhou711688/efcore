@@ -44,6 +44,9 @@ namespace Microsoft.EntityFrameworkCore.Query
                 case FromSqlExpression fromSqlExpression:
                     return VisitFromSql(fromSqlExpression);
 
+                case TemporalTableExpression temporalTableExpression:
+                    return VisitTemporalTable(temporalTableExpression);
+
                 case InExpression inExpression:
                     return VisitIn(inExpression);
 
@@ -116,6 +119,7 @@ namespace Microsoft.EntityFrameworkCore.Query
         protected abstract Expression VisitExcept([NotNull] ExceptExpression exceptExpression);
         protected abstract Expression VisitExists([NotNull] ExistsExpression existsExpression);
         protected abstract Expression VisitFromSql([NotNull] FromSqlExpression fromSqlExpression);
+        protected abstract Expression VisitTemporalTable([NotNull] TemporalTableExpression temporalTableExpression);
         protected abstract Expression VisitIn([NotNull] InExpression inExpression);
         protected abstract Expression VisitIntersect([NotNull] IntersectExpression intersectExpression);
         protected abstract Expression VisitLike([NotNull] LikeExpression likeExpression);

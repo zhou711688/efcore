@@ -102,6 +102,13 @@ namespace Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal
                     SqlServerAnnotationNames.MemoryOptimized,
                     true);
             }
+
+            if (table.EntityTypeMappings.First().EntityType.IsTemporal())
+            {
+                yield return new Annotation(
+                    SqlServerAnnotationNames.Temporal,
+                    true);
+            }
         }
 
         /// <summary>

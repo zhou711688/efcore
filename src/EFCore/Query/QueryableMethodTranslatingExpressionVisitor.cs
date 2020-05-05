@@ -77,11 +77,6 @@ namespace Microsoft.EntityFrameworkCore.Query
         {
             Check.NotNull(methodCallExpression, nameof(methodCallExpression));
 
-            ShapedQueryExpression CheckTranslated(ShapedQueryExpression translated)
-            {
-                return translated ?? throw new InvalidOperationException(CoreStrings.TranslationFailed(methodCallExpression.Print()));
-            }
-
             var method = methodCallExpression.Method;
             if (method.DeclaringType == typeof(Queryable)
                 || method.DeclaringType == typeof(QueryableExtensions))
@@ -466,6 +461,11 @@ namespace Microsoft.EntityFrameworkCore.Query
             return _subquery
                 ? (Expression)null
                 : throw new NotImplementedException(CoreStrings.UnhandledMethod(method.Name));
+
+            ShapedQueryExpression CheckTranslated(ShapedQueryExpression translated)
+            {
+                return translated ?? throw new InvalidOperationException(CoreStrings.TranslationFailed(methodCallExpression.Print()));
+            }
         }
 
         private sealed class EntityShaperNullableMarkingExpressionVisitor : ExpressionVisitor
