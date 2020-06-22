@@ -2708,6 +2708,22 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
                 GetString("UnhandledNavigationBase", nameof(type)),
                 type);
 
+        /// <summary>
+        ///     Cannot create an association entity type using skip navigations '{leftEntityType}.{leftSkipNavigationName}' which targets entity type '{leftTargetEntityType}', and '{rightEntityType}.{rightSkipNavigationName}' which targets '{rightTargetEntityType}'. They should target one another.
+        /// </summary>
+        public static string InvalidSkipNavigationsForAssociationEntityType([CanBeNull] object leftEntityType, [CanBeNull] object leftSkipNavigationName, [CanBeNull] object leftTargetEntityType, [CanBeNull] object rightEntityType, [CanBeNull] object rightSkipNavigationName, [CanBeNull] object rightTargetEntityType)
+            => string.Format(
+                GetString("InvalidSkipNavigationsForAssociationEntityType", nameof(leftEntityType), nameof(leftSkipNavigationName), nameof(leftTargetEntityType), nameof(rightEntityType), nameof(rightSkipNavigationName), nameof(rightTargetEntityType)),
+                leftEntityType, leftSkipNavigationName, leftTargetEntityType, rightEntityType, rightSkipNavigationName, rightTargetEntityType);
+
+        /// <summary>
+        ///     Cannot create a foreign key for skip navigation '{declaringEntityType}.{skipNavigationName}' on association entity type '{associationEntityType}'. Ensure '{declaringEntityType}' has a primary key and is not ignored in the model.
+        /// </summary>
+        public static string UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object associationEntityType)
+            => string.Format(
+                GetString("UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType", nameof(declaringEntityType), nameof(skipNavigationName), nameof(associationEntityType)),
+                declaringEntityType, skipNavigationName, associationEntityType);
+
         private static string GetString(string name, params string[] formatterNames)
         {
             var value = _resourceManager.GetString(name);
