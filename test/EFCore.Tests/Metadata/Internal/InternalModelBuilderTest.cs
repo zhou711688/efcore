@@ -349,34 +349,31 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         }
 
         [ConditionalFact]
-        public void Throws_if_create_association_entity_type_with_invalid_left_skip_navigation()
+        public void Throws_if_create_association_entity_type_with_left_skip_navigation_with_no_inverse()
         {
             var model = new Model();
             var modelBuilder = CreateModelBuilder(model);
 
             var manyToManyLeft = modelBuilder.Entity(typeof(ManyToManyLeft), ConfigurationSource.Convention);
             var manyToManyRight = modelBuilder.Entity(typeof(ManyToManyRight), ConfigurationSource.Convention);
-            var manyToManyOtherRight = modelBuilder.Entity(typeof(ManyToManyOtherRight), ConfigurationSource.Convention);
 
-            // skipNavOnLeft does not target skipNavOnRight.DeclaringEntityType
             var skipNavOnLeft = manyToManyLeft.HasSkipNavigation(
-                new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.OtherRights))),
-                manyToManyOtherRight.Metadata,
+                new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.Rights))),
+                manyToManyRight.Metadata,
                 ConfigurationSource.Convention);
             var skipNavOnRight = manyToManyRight.HasSkipNavigation(
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            // set no inverse on skipNavOnLeft
 
             Assert.Equal(
-                CoreStrings.InvalidSkipNavigationsForAssociationEntityType(
+                CoreStrings.SkipNavigationForAssociationEntityTypeHasNoInverse(
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
-                    nameof(ManyToManyLeft.OtherRights),
-                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyOtherRight",
+                    nameof(ManyToManyLeft.Rights),
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
-                    nameof(ManyToManyRight.Lefts),
-                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft"),
-                Assert.Throws<InvalidOperationException>(() => modelBuilder.AssociationEntity(
+                    nameof(ManyToManyRight.Lefts)),
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
                     skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
 
             Assert.Empty(model.GetEntityTypes()
@@ -384,34 +381,122 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         }
 
         [ConditionalFact]
-        public void Throws_if_create_association_entity_type_with_invalid_right_skip_navigation()
+        public void Throws_if_create_association_entity_type_with_right_skip_navigation_with_no_inverse()
         {
             var model = new Model();
             var modelBuilder = CreateModelBuilder(model);
 
             var manyToManyLeft = modelBuilder.Entity(typeof(ManyToManyLeft), ConfigurationSource.Convention);
             var manyToManyRight = modelBuilder.Entity(typeof(ManyToManyRight), ConfigurationSource.Convention);
-            var manyToManyOtherLeft = modelBuilder.Entity(typeof(ManyToManyOtherLeft), ConfigurationSource.Convention);
 
-            // skipNavOnRight does not target skipNavOnLeft.DeclaringEntityType
             var skipNavOnLeft = manyToManyLeft.HasSkipNavigation(
                 new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.Rights))),
                 manyToManyRight.Metadata,
                 ConfigurationSource.Convention);
             var skipNavOnRight = manyToManyRight.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
+                manyToManyLeft.Metadata,
+                ConfigurationSource.Convention);
+            var otherSkipNavOnRight = manyToManyRight.HasSkipNavigation(
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.OtherLefts))),
-                manyToManyOtherLeft.Metadata,
+                manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
 
+            // skipNavOnRight does not have an inverse - using SetInverse (rather than HasInverse)
+            // does _not_ set the inverse's inverse
+            skipNavOnLeft.Metadata.SetInverse(otherSkipNavOnRight.Metadata, ConfigurationSource.Convention);
+
             Assert.Equal(
-                CoreStrings.InvalidSkipNavigationsForAssociationEntityType(
+                CoreStrings.SkipNavigationForAssociationEntityTypeHasNoInverse(
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
+                    nameof(ManyToManyRight.Lefts),
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
+                    nameof(ManyToManyLeft.Rights)),
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
+                    skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
+
+            Assert.Empty(model.GetEntityTypes()
+                .Where(e => e.IsAutomaticallyCreatedAssociationEntityType));
+        }
+
+        [ConditionalFact]
+        public void Throws_if_create_association_entity_type_with_left_skip_navigation_with_wrong_inverse()
+        {
+            var model = new Model();
+            var modelBuilder = CreateModelBuilder(model);
+
+            var manyToManyLeft = modelBuilder.Entity(typeof(ManyToManyLeft), ConfigurationSource.Convention);
+            var manyToManyRight = modelBuilder.Entity(typeof(ManyToManyRight), ConfigurationSource.Convention);
+
+            var skipNavOnLeft = manyToManyLeft.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.Rights))),
+                manyToManyRight.Metadata,
+                ConfigurationSource.Convention);
+            var skipNavOnRight = manyToManyRight.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
+                manyToManyLeft.Metadata,
+                ConfigurationSource.Convention);
+            var otherSkipNavOnRight = manyToManyRight.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.OtherLefts))),
+                manyToManyLeft.Metadata,
+                ConfigurationSource.Convention);
+
+            // using SetInverse (rather than HasInverse) does _not_ set the inverse's inverse
+            skipNavOnRight.Metadata.SetInverse(skipNavOnLeft.Metadata, ConfigurationSource.Convention); // correct
+            skipNavOnLeft.Metadata.SetInverse(otherSkipNavOnRight.Metadata, ConfigurationSource.Convention); // wrong
+
+            Assert.Equal(
+                CoreStrings.SkipNavigationForAssociationEntityTypeWrongInverse(
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
                     nameof(ManyToManyLeft.Rights),
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
-                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
                     nameof(ManyToManyRight.OtherLefts),
-                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyOtherLeft"),
-                Assert.Throws<InvalidOperationException>(() => modelBuilder.AssociationEntity(
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
+                    nameof(ManyToManyRight.Lefts)
+                    ),
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
+                    skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
+
+            Assert.Empty(model.GetEntityTypes()
+                .Where(e => e.IsAutomaticallyCreatedAssociationEntityType));
+        }
+
+        [ConditionalFact]
+        public void Throws_if_create_association_entity_type_with_right_skip_navigation_with_wrong_inverse()
+        {
+            var model = new Model();
+            var modelBuilder = CreateModelBuilder(model);
+
+            var manyToManyLeft = modelBuilder.Entity(typeof(ManyToManyLeft), ConfigurationSource.Convention);
+            var manyToManyRight = modelBuilder.Entity(typeof(ManyToManyRight), ConfigurationSource.Convention);
+
+            var skipNavOnLeft = manyToManyLeft.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.Rights))),
+                manyToManyRight.Metadata,
+                ConfigurationSource.Convention);
+            var skipNavOnRight = manyToManyRight.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
+                manyToManyLeft.Metadata,
+                ConfigurationSource.Convention);
+            var otherSkipNavOnLeft = manyToManyLeft.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManyLeft).GetProperty(nameof(ManyToManyLeft.OtherRights))),
+                manyToManyRight.Metadata,
+                ConfigurationSource.Convention);
+
+            // using SetInverse (rather than HasInverse) does _not_ set the inverse's inverse
+            skipNavOnLeft.Metadata.SetInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention); // correct
+            skipNavOnRight.Metadata.SetInverse(otherSkipNavOnLeft.Metadata, ConfigurationSource.Convention); // wrong
+
+            Assert.Equal(
+                CoreStrings.SkipNavigationForAssociationEntityTypeWrongInverse(
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
+                    nameof(ManyToManyRight.Lefts),
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
+                    nameof(ManyToManyLeft.OtherRights),
+                    "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
+                    nameof(ManyToManyLeft.Rights)
+                    ),
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
                     skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
 
             Assert.Empty(model.GetEntityTypes()
@@ -437,13 +522,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnLeft.HasInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention);
 
             Assert.Equal(
                 CoreStrings.UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType(
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyLeft",
                     nameof(ManyToManyLeft.Rights),
                     "Join_ManyToManyLeft_ManyToManyRight"),
-                Assert.Throws<InvalidOperationException>(() => modelBuilder.AssociationEntity(
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
                     skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
 
             Assert.Empty(model.GetEntityTypes()
@@ -469,13 +555,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnLeft.HasInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention);
 
             Assert.Equal(
                 CoreStrings.UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType(
                     "Microsoft.EntityFrameworkCore.Metadata.Internal.InternalModelBuilderTest+ManyToManyRight",
                     nameof(ManyToManyRight.Lefts),
                     "Join_ManyToManyLeft_ManyToManyRight"),
-                Assert.Throws<InvalidOperationException>(() => modelBuilder.AssociationEntity(
+                Assert.Throws<InvalidOperationException>(() => modelBuilder.HasAutomaticAssociationEntity(
                     skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Explicit)).Message);
 
             Assert.Empty(model.GetEntityTypes()
@@ -501,8 +588,9 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnLeft.HasInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention);
 
-            var associationEntityTypeBuilder = modelBuilder.AssociationEntity(
+            var associationEntityTypeBuilder = modelBuilder.HasAutomaticAssociationEntity(
                 skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Convention);
             var associationEntityType = associationEntityTypeBuilder.Metadata;
 
@@ -559,8 +647,9 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnLeft.HasInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention);
 
-            var associationEntityTypeBuilder = modelBuilder.AssociationEntity(
+            var associationEntityTypeBuilder = modelBuilder.HasAutomaticAssociationEntity(
                 skipNavOnLeft.Metadata, skipNavOnRight.Metadata, ConfigurationSource.Convention);
             var associationEntityType = associationEntityTypeBuilder.Metadata;
 
@@ -609,6 +698,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 new MemberIdentity(typeof(ManyToManyRight).GetProperty(nameof(ManyToManyRight.Lefts))),
                 manyToManyLeft.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnLeft.HasInverse(skipNavOnRight.Metadata, ConfigurationSource.Convention);
 
             var leftFK = manyToManyJoin.HasRelationship(
                 manyToManyLeft.Metadata.Name,
@@ -702,26 +792,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         {
             public int Id { get; set; }
             public List<ManyToManyRight> Rights { get; set; }
-            public List<ManyToManyOtherRight> OtherRights { get; set; }
+            public List<ManyToManyRight> OtherRights { get; set; }
         }
 
         private class ManyToManyRight
         {
             public int Id { get; set; }
             public List<ManyToManyLeft> Lefts { get; set; }
-            public List<ManyToManyOtherLeft> OtherLefts { get; set; }
-        }
-
-        private class ManyToManyOtherLeft
-        {
-            public int Id { get; set; }
-            public List<ManyToManyRight> Rights { get; set; }
-        }
-
-        private class ManyToManyOtherRight
-        {
-            public int Id { get; set; }
-            public List<ManyToManyLeft> Lefts { get; set; }
+            public List<ManyToManyLeft> OtherLefts { get; set; }
         }
 
         private class ManyToManyJoin

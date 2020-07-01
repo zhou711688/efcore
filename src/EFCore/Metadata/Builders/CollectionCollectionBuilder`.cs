@@ -3,6 +3,7 @@
 
 using System;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
@@ -51,13 +52,19 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders
             [NotNull] Func<EntityTypeBuilder<TAssociationEntity>, ReferenceCollectionBuilder<TRightEntity, TAssociationEntity>> configureLeft)
             where TAssociationEntity : class
         {
+            if (((Model)LeftEntityType.Model).IsShared(typeof(TAssociationEntity)))
+            {
+                throw new InvalidOperationException(
+                    CoreStrings.DoNotUseUsingEntityOnSharedClrType(typeof(TAssociationEntity).Name));
+            }
+
             var existingAssociationEntityType = (EntityType)
                 (LeftNavigation.ForeignKey?.DeclaringEntityType
                     ?? RightNavigation.ForeignKey?.DeclaringEntityType);
             if (existingAssociationEntityType != null)
             {
                 ModelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
-                    existingAssociationEntityType, false, ConfigurationSource.Explicit);
+                    existingAssociationEntityType, removeSkipNavigations: false, ConfigurationSource.Explicit);
             }
 
             var entityTypeBuilder = new EntityTypeBuilder<TAssociationEntity>(

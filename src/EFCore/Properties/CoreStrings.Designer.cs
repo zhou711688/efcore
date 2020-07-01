@@ -2709,12 +2709,20 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
                 type);
 
         /// <summary>
-        ///     Cannot create an association entity type using skip navigations '{leftEntityType}.{leftSkipNavigationName}' which targets entity type '{leftTargetEntityType}', and '{rightEntityType}.{rightSkipNavigationName}' which targets '{rightTargetEntityType}'. They should target one another.
+        ///     Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is not set. The inverse should be the other skip navigation, '{otherEntityType}.{otherSkipNavigationName}'.
         /// </summary>
-        public static string InvalidSkipNavigationsForAssociationEntityType([CanBeNull] object leftEntityType, [CanBeNull] object leftSkipNavigationName, [CanBeNull] object leftTargetEntityType, [CanBeNull] object rightEntityType, [CanBeNull] object rightSkipNavigationName, [CanBeNull] object rightTargetEntityType)
+        public static string SkipNavigationForAssociationEntityTypeHasNoInverse([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object otherEntityType, [CanBeNull] object otherSkipNavigationName)
             => string.Format(
-                GetString("InvalidSkipNavigationsForAssociationEntityType", nameof(leftEntityType), nameof(leftSkipNavigationName), nameof(leftTargetEntityType), nameof(rightEntityType), nameof(rightSkipNavigationName), nameof(rightTargetEntityType)),
-                leftEntityType, leftSkipNavigationName, leftTargetEntityType, rightEntityType, rightSkipNavigationName, rightTargetEntityType);
+                GetString("SkipNavigationForAssociationEntityTypeHasNoInverse", nameof(declaringEntityType), nameof(skipNavigationName), nameof(otherEntityType), nameof(otherSkipNavigationName)),
+                declaringEntityType, skipNavigationName, otherEntityType, otherSkipNavigationName);
+
+        /// <summary>
+        ///     Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is '{inverseEntityType}.{inverseSkipNavigationName}', but it should be '{otherEntityType}.{otherSkipNavigationName}'.
+        /// </summary>
+        public static string SkipNavigationForAssociationEntityTypeWrongInverse([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object inverseEntityType, [CanBeNull] object inverseSkipNavigationName, [CanBeNull] object otherEntityType, [CanBeNull] object otherSkipNavigationName)
+            => string.Format(
+                GetString("SkipNavigationForAssociationEntityTypeWrongInverse", nameof(declaringEntityType), nameof(skipNavigationName), nameof(inverseEntityType), nameof(inverseSkipNavigationName), nameof(otherEntityType), nameof(otherSkipNavigationName)),
+                declaringEntityType, skipNavigationName, inverseEntityType, inverseSkipNavigationName, otherEntityType, otherSkipNavigationName);
 
         /// <summary>
         ///     Cannot create a foreign key for skip navigation '{declaringEntityType}.{skipNavigationName}' on association entity type '{associationEntityType}'. Ensure '{declaringEntityType}' has a primary key and is not ignored in the model.
@@ -2723,6 +2731,14 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
             => string.Format(
                 GetString("UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType", nameof(declaringEntityType), nameof(skipNavigationName), nameof(associationEntityType)),
                 declaringEntityType, skipNavigationName, associationEntityType);
+
+        /// <summary>
+        ///     Cannot use UsingEntity() passing type '{clrType}' because the model contains shared entity type(s) with same type. Use a type which uniquely defines an entity type.
+        /// </summary>
+        public static string DoNotUseUsingEntityOnSharedClrType([CanBeNull] object clrType)
+            => string.Format(
+                GetString("DoNotUseUsingEntityOnSharedClrType", nameof(clrType)),
+                clrType);
 
         private static string GetString(string name, params string[] formatterNames)
         {

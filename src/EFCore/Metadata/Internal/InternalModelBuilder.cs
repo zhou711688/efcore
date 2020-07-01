@@ -220,19 +220,21 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         ///     any release. You should only use it directly in your code with extreme caution and knowing that
         ///     doing so can result in application failures when updating to a new Entity Framework Core release.
         /// </summary>
-        public virtual InternalEntityTypeBuilder AssociationEntity(
+        public virtual InternalEntityTypeBuilder HasAutomaticAssociationEntity(
             [NotNull] SkipNavigation leftSkipNavigation,
             [NotNull] SkipNavigation rightSkipNavigation,
             ConfigurationSource configurationSource)
         {
+            // This API is used solely to create association entities automatically
+            // i.e. through convention. Fluent-API creation of association entities
+            // is handled separately.
             Check.NotNull(leftSkipNavigation, nameof(leftSkipNavigation));
             Check.NotNull(rightSkipNavigation, nameof(rightSkipNavigation));
 
             var leftEntityType = leftSkipNavigation.DeclaringEntityType;
             var rightEntityType = rightSkipNavigation.DeclaringEntityType;
 
-            if (leftSkipNavigation.TargetEntityType != rightEntityType
-                || rightSkipNavigation.TargetEntityType != leftEntityType)
+            if (leftSkipNavigation.Inverse == null)
             {
                 if (configurationSource != ConfigurationSource.Explicit)
                 {
@@ -240,13 +242,65 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 }
 
                 throw new InvalidOperationException(
-                    CoreStrings.InvalidSkipNavigationsForAssociationEntityType(
+                    CoreStrings.SkipNavigationForAssociationEntityTypeHasNoInverse(
                         leftEntityType.Name,
                         leftSkipNavigation.Name,
-                        leftSkipNavigation.TargetEntityType.Name,
+                        rightEntityType.Name,
+                        rightSkipNavigation.Name));
+            }
+
+            if (rightSkipNavigation.Inverse == null)
+            {
+                if (configurationSource != ConfigurationSource.Explicit)
+                {
+                    return null;
+                }
+
+                throw new InvalidOperationException(
+                    CoreStrings.SkipNavigationForAssociationEntityTypeHasNoInverse(
                         rightEntityType.Name,
                         rightSkipNavigation.Name,
-                        rightSkipNavigation.TargetEntityType.Name));
+                        leftEntityType.Name,
+                        leftSkipNavigation.Name));
+            }
+
+            if (leftSkipNavigation.Inverse != rightSkipNavigation)
+            {
+                if (configurationSource != ConfigurationSource.Explicit)
+                {
+                    return null;
+                }
+
+                throw new InvalidOperationException(
+                    CoreStrings.SkipNavigationForAssociationEntityTypeWrongInverse(
+                        leftEntityType.Name,
+                        leftSkipNavigation.Name,
+                        leftSkipNavigation.Inverse.DeclaringEntityType.Name,
+                        leftSkipNavigation.Inverse.Name,
+                        rightEntityType.Name,
+                        rightSkipNavigation.Name));
+            }
+
+            if (rightSkipNavigation.Inverse != leftSkipNavigation)
+            {
+                if (configurationSource != ConfigurationSource.Explicit)
+                {
+                    return null;
+                }
+
+                throw new InvalidOperationException(
+                    CoreStrings.SkipNavigationForAssociationEntityTypeWrongInverse(
+                        rightEntityType.Name,
+                        rightSkipNavigation.Name,
+                        rightSkipNavigation.Inverse.DeclaringEntityType.Name,
+                        rightSkipNavigation.Inverse.Name,
+                        leftEntityType.Name,
+                        leftSkipNavigation.Name));
+            }
+
+            if (leftSkipNavigation.AssociationEntityType != null)
+            {
+                return leftSkipNavigation.AssociationEntityType.Builder;
             }
 
             // create the association entity type
@@ -305,9 +359,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                         associationEntityTypeName));
             }
 
-            leftSkipNavigation.SetForeignKey(leftForeignKey, configurationSource);
-            rightSkipNavigation.SetForeignKey(rightForeignKey, configurationSource);
-            leftSkipNavigation.Builder.HasInverse(rightSkipNavigation, configurationSource);
+            leftSkipNavigation.Builder.HasForeignKey(leftForeignKey, configurationSource);
+            rightSkipNavigation.Builder.HasForeignKey(rightForeignKey, configurationSource);
 
             // Creating the primary key below also negates the need for an index on
             // the properties of leftForeignKey - that index is automatically removed.
@@ -352,6 +405,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                     dependentEndForeignKeyPropertyNames,
                     principalKey,
                     configurationSource)
+                .IsUnique(false, configurationSource)
                 .Metadata;
         }
 
@@ -377,19 +431,17 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 "Automatically created association entity types should have exactly 2 foreign keys");
             foreach (var fk in associationEntityType.GetForeignKeys())
             {
-                var principalEntityType = fk.PrincipalEntityType;
-                var skipNavigation = principalEntityType
-                    .GetSkipNavigations().FirstOrDefault(sn => fk == sn.ForeignKey);
+                var skipNavigation = fk.GetReferencingSkipNavigations().FirstOrDefault();
                 if (skipNavigation != null)
                 {
                     skipNavigation.SetForeignKey(null, configurationSource);
                     skipNavigation.SetInverse(null, configurationSource);
 
                     if (removeSkipNavigations
-                        && principalEntityType.Builder
+                        && fk.PrincipalEntityType.Builder
                             .CanRemoveSkipNavigation(skipNavigation, configurationSource))
                     {
-                        principalEntityType.RemoveSkipNavigation(skipNavigation);
+                        fk.PrincipalEntityType.RemoveSkipNavigation(skipNavigation);
                     }
                 }
             }

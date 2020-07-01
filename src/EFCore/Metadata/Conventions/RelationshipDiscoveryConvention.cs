@@ -241,21 +241,25 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                     var navigationProperty = relationshipCandidate.NavigationProperties[0];
                     var navigationPropertyName = navigationProperty.GetSimpleMemberName();
                     var existingNavigation = entityType.FindNavigation(navigationPropertyName);
-                    if (existingNavigation != null
-                        && (existingNavigation.DeclaringEntityType != entityType
-                            || existingNavigation.TargetEntityType != targetEntityType))
+                    if (existingNavigation != null)
                     {
-                        relationshipCandidate.NavigationProperties.Remove(navigationProperty);
-                        continue;
+                        if (existingNavigation.DeclaringEntityType != entityType
+                            || existingNavigation.TargetEntityType != targetEntityType)
+                        {
+                            relationshipCandidate.NavigationProperties.Remove(navigationProperty);
+                            continue;
+                        }
                     }
-
-                    var existingSkipNavigation = entityType.FindSkipNavigation(navigationPropertyName);
-                    if (existingSkipNavigation != null
-                        && (existingSkipNavigation.DeclaringEntityType != entityType
-                            || existingSkipNavigation.TargetEntityType != targetEntityType))
+                    else
                     {
-                        relationshipCandidate.NavigationProperties.Remove(navigationProperty);
-                        continue;
+                        var existingSkipNavigation = entityType.FindSkipNavigation(navigationPropertyName);
+                        if (existingSkipNavigation != null
+                            && (existingSkipNavigation.DeclaringEntityType != entityType
+                                || existingSkipNavigation.TargetEntityType != targetEntityType))
+                        {
+                            relationshipCandidate.NavigationProperties.Remove(navigationProperty);
+                            continue;
+                        }
                     }
 
                     if (relationshipCandidate.NavigationProperties.Count == 1
@@ -583,74 +587,14 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
                     foreach (var navigationProperty in relationshipCandidate.NavigationProperties.ToList())
                     {
-                        var navigationPropertyName = navigationProperty.GetSimpleMemberName();
-                        var existingNavigation = entityType.FindDeclaredNavigation(navigationPropertyName);
-                        if (existingNavigation != null)
-                        {
-                            if (existingNavigation.ForeignKey.DeclaringEntityType.Builder
-                                    .HasNoRelationship(existingNavigation.ForeignKey) == null
-                                && existingNavigation.ForeignKey.Builder.HasNavigation(
-                                    (string)null, existingNavigation.IsOnDependent) == null)
-                            {
-                                // Navigations of higher configuration source are not ambiguous
-                                relationshipCandidate.NavigationProperties.Remove(navigationProperty);
-                            }
-                        }
-                        else
-                        {
-                            var associationEntityType = (EntityType)entityType
-                                .FindDeclaredSkipNavigation(navigationPropertyName)?
-                                .ForeignKey?.DeclaringEntityType;
-                            if (associationEntityType != null)
-                            {
-                                var modelBuilder = associationEntityType.Model.Builder;
-                                // The PropertyInfo underlying this skip navigation has become
-                                // ambiguous since we used it, so remove the association entity
-                                // if it was automatically created.
-                                if (modelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
-                                        associationEntityType, true, ConfigurationSource.Convention) == null)
-                                {
-                                    // Navigations of higher configuration source are not ambiguous
-                                    relationshipCandidate.NavigationProperties.Remove(navigationProperty);
-                                }
-                            }
-                        }
+                        RemoveHigherConfigurationSourceNavigation(
+                            navigationProperty, entityType, relationshipCandidate.NavigationProperties);
                     }
 
                     foreach (var inverseProperty in relationshipCandidate.InverseProperties.ToList())
                     {
-                        var inversePropertyName = inverseProperty.GetSimpleMemberName();
-                        var existingInverse = targetEntityType.FindDeclaredNavigation(inversePropertyName);
-                        if (existingInverse != null)
-                        {
-                            if (existingInverse.ForeignKey.DeclaringEntityType.Builder
-                                    .HasNoRelationship(existingInverse.ForeignKey) == null
-                                && existingInverse.ForeignKey.Builder.HasNavigation(
-                                    (string)null, existingInverse.IsOnDependent) == null)
-                            {
-                                // Navigations of higher configuration source are not ambiguous
-                                relationshipCandidate.InverseProperties.Remove(inverseProperty);
-                            }
-                        }
-                        else
-                        {
-                            var associationEntityType = (EntityType)targetEntityType
-                                .FindDeclaredSkipNavigation(inversePropertyName)?
-                                .ForeignKey?.DeclaringEntityType;
-                            if (associationEntityType != null)
-                            {
-                                var modelBuilder = associationEntityType.Model.Builder;
-                                // The PropertyInfo underlying this skip navigation has become
-                                // ambiguous since we used it, so remove the association entity
-                                // if it was automatically created.
-                                if (modelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
-                                        associationEntityType, true, ConfigurationSource.Convention) == null)
-                                {
-                                    // Navigations of higher configuration source are not ambiguous
-                                    relationshipCandidate.NavigationProperties.Remove(inverseProperty);
-                                }
-                            }
-                        }
+                        RemoveHigherConfigurationSourceNavigation(
+                            inverseProperty, targetEntityType, relationshipCandidate.InverseProperties);
                     }
 
                     if (!isAmbiguousOnBase)
@@ -783,6 +727,45 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             }
         }
 
+        private void RemoveHigherConfigurationSourceNavigation(
+            PropertyInfo navigationProperty,
+            IConventionEntityType declaringEntityType,
+            List<PropertyInfo> toRemoveFrom)
+        {
+            var navigationPropertyName = navigationProperty.GetSimpleMemberName();
+            var existingNavigation = declaringEntityType.FindDeclaredNavigation(navigationPropertyName);
+            if (existingNavigation != null)
+            {
+                if (existingNavigation.ForeignKey.DeclaringEntityType.Builder
+                        .HasNoRelationship(existingNavigation.ForeignKey) == null
+                    && existingNavigation.ForeignKey.Builder.HasNavigation(
+                        (string)null, existingNavigation.IsOnDependent) == null)
+                {
+                    // Navigations of higher configuration source are not ambiguous
+                    toRemoveFrom.Remove(navigationProperty);
+                }
+            }
+            else
+            {
+                var associationEntityType = (EntityType)declaringEntityType
+                    .FindDeclaredSkipNavigation(navigationPropertyName)?
+                    .ForeignKey?.DeclaringEntityType;
+                if (associationEntityType != null)
+                {
+                    var modelBuilder = associationEntityType.Model.Builder;
+                    // The PropertyInfo underlying this skip navigation has become
+                    // ambiguous since we used it, so remove the association entity
+                    // if it was automatically created.
+                    if (modelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
+                            associationEntityType, removeSkipNavigations: true, ConfigurationSource.Convention) == null)
+                    {
+                        // Navigations of higher configuration source are not ambiguous
+                        toRemoveFrom.Remove(navigationProperty);
+                    }
+                }
+            }
+        }
+
         private void HasManyToManyRelationship(
             IConventionEntityTypeBuilder entityTypeBuilder,
             RelationshipCandidate relationshipCandidate,
@@ -814,15 +797,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 return;
             }
 
-            var leftSkipNavigation = leftEntityType.FindSkipNavigation(navigation);
-            var rightSkipNavigation = rightEntityType.FindSkipNavigation(inverse);
-            if (leftSkipNavigation != null
-                || rightSkipNavigation != null)
-            {
-                // skip navigations have already been configured using these properties
-                return;
-            }
-
             var navigationName = navigation.GetSimpleMemberName();
             var inverseName = inverse.GetSimpleMemberName();
             if (((EntityType)leftEntityType)
@@ -834,37 +808,31 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 return;
             }
 
-            leftSkipNavigation = leftEntityType.AddSkipNavigation(
-                navigationName, navigation, rightEntityType,
-                collection: true, onDependent: false, fromDataAnnotation: false);
+            var leftSkipNavigation = leftEntityType.FindSkipNavigation(navigation) ??
+                leftEntityType.AddSkipNavigation(
+                    navigationName, navigation, rightEntityType,
+                    collection: true, onDependent: false, fromDataAnnotation: false);
             if (leftSkipNavigation == null)
             {
                 return;
             }
 
-            rightSkipNavigation = rightEntityType.AddSkipNavigation(
-                inverseName, inverse, leftEntityType,
-                collection: true, onDependent: false, fromDataAnnotation: false);
+            var rightSkipNavigation = rightEntityType.FindSkipNavigation(inverse) ??
+                rightEntityType.AddSkipNavigation(
+                    inverseName, inverse, leftEntityType,
+                    collection: true, onDependent: false, fromDataAnnotation: false);
             if (rightSkipNavigation == null)
             {
-                // Failed to create the right skip navigation - so remove
-                // the left skip navigation we just created as well.
-                leftEntityType.RemoveSkipNavigation(leftSkipNavigation);
                 return;
             }
 
-            var associationEntityTypeBuilder =
-                ((InternalModelBuilder)entityTypeBuilder.ModelBuilder).AssociationEntity(
-                    (SkipNavigation)leftSkipNavigation,
-                    (SkipNavigation)rightSkipNavigation,
-                    ConfigurationSource.Convention);
-            if (associationEntityTypeBuilder == null)
-            {
-                // Failed to create the association entity type - so remove
-                // both the skip navigations we just created as well.
-                leftEntityType.RemoveSkipNavigation(leftSkipNavigation);
-                rightEntityType.RemoveSkipNavigation(rightSkipNavigation);
-            }
+            // also sets rightSkipNavigation's inverse
+            leftSkipNavigation.Builder.HasInverse(rightSkipNavigation, fromDataAnnotation: false);
+
+            ((InternalModelBuilder)entityTypeBuilder.ModelBuilder).HasAutomaticAssociationEntity(
+                (SkipNavigation)leftSkipNavigation,
+                (SkipNavigation)rightSkipNavigation,
+                ConfigurationSource.Convention);
         }
 
         /// <summary>

@@ -13,16 +13,15 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
     /// <summary>
     ///     A convention which looks for matching skip navigations and automatically creates
     ///     a many-to-many association entity with suitable foreign keys, sets the two
-    ///     matching skip navigations to use those foreign keys and makes them inverses of
-    ///     one another.
+    ///     matching skip navigations to use those foreign keys.
     /// </summary>
-    public class ManyToManyConvention : ISkipNavigationAddedConvention
+    public class ManyToManyAssociationEntityTypeConvention : ISkipNavigationAddedConvention
     {
         /// <summary>
-        ///     Creates a new instance of <see cref="ManyToManyConvention" />.
+        ///     Creates a new instance of <see cref="ManyToManyAssociationEntityTypeConvention" />.
         /// </summary>
         /// <param name="dependencies"> Parameter object containing dependencies for this convention. </param>
-        public ManyToManyConvention([NotNull] ProviderConventionSetBuilderDependencies dependencies)
+        public ManyToManyAssociationEntityTypeConvention([NotNull] ProviderConventionSetBuilderDependencies dependencies)
         {
             Dependencies = dependencies;
         }
@@ -41,8 +40,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             IConventionSkipNavigationBuilder skipNavigationBuilder,
             IConventionContext<IConventionSkipNavigationBuilder> context)
         {
-            Check.NotNull(skipNavigationBuilder, "skipNavigationBuilder");
-            Check.NotNull(context, "context");
+            Check.NotNull(skipNavigationBuilder, nameof(skipNavigationBuilder));
+            Check.NotNull(context, nameof(context));
 
             var skipNavigation = skipNavigationBuilder.Metadata;
             if (skipNavigation.ForeignKey != null
@@ -55,13 +54,10 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 return;
             }
 
-            var matchingSkipNavigation = skipNavigation.TargetEntityType
-                .GetSkipNavigations()
-                .FirstOrDefault(sn => sn.TargetEntityType == skipNavigation.DeclaringEntityType);
-
-            if (matchingSkipNavigation == null
-                || matchingSkipNavigation.ForeignKey != null
-                || !matchingSkipNavigation.IsCollection)
+            var inverseSkipNavigation = skipNavigation.Inverse;
+            if (inverseSkipNavigation == null
+                || inverseSkipNavigation.ForeignKey != null
+                || !inverseSkipNavigation.IsCollection)
             {
                 // do not create an automatic many-to-many association entity type if
                 // the matching skip navigation is already "in use" (i.e.
@@ -70,9 +66,9 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             }
 
             var model = (Model)skipNavigation.DeclaringEntityType.Model;
-            model.Builder.AssociationEntity(
+            model.Builder.HasAutomaticAssociationEntity(
                 (SkipNavigation)skipNavigation,
-                (SkipNavigation)matchingSkipNavigation,
+                (SkipNavigation)inverseSkipNavigation,
                 ConfigurationSource.Convention);
         }
     }

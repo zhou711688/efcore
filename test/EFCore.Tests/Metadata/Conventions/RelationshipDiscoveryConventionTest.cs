@@ -273,35 +273,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         }
 
         [ConditionalFact]
-        public void Many_to_many_bidirectional_is_not_discovered_if_skip_navigations_already_created()
-        {
-            var modelBuilder = CreateInternalModeBuilder();
-            var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
-            var manyToManySecond = modelBuilder.Entity(typeof(ManyToManySecond), ConfigurationSource.Convention);
-
-            manyToManyFirst.PrimaryKey(new[] { nameof(ManyToManyFirst.Id) }, ConfigurationSource.Convention);
-            manyToManySecond.PrimaryKey(new[] { nameof(ManyToManySecond.Id) }, ConfigurationSource.Convention);
-
-            var skipNavOnFirst = manyToManyFirst.HasSkipNavigation(
-                new MemberIdentity(typeof(ManyToManyFirst).GetProperty(nameof(ManyToManyFirst.ManyToManySeconds))),
-                manyToManySecond.Metadata,
-                ConfigurationSource.Convention);
-            var skipNavOnSecond = manyToManySecond.HasSkipNavigation(
-                new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
-                manyToManyFirst.Metadata,
-                ConfigurationSource.Convention);
-
-            RunConvention(manyToManyFirst);
-
-            Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
-
-            // the previously created skip navigations are unaffected
-            Assert.Same(skipNavOnFirst.Metadata, manyToManyFirst.Metadata.GetSkipNavigations().Single());
-            Assert.Same(skipNavOnSecond.Metadata, manyToManySecond.Metadata.GetSkipNavigations().Single());
-        }
-
-        [ConditionalFact]
         public void Many_to_many_bidirectional_is_not_discovered_if_missing_left_primary_key()
         {
             var modelBuilder = CreateInternalModeBuilder();
@@ -315,8 +286,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
                 .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
-            Assert.Empty(manyToManyFirst.Metadata.GetSkipNavigations());
-            Assert.Empty(manyToManySecond.Metadata.GetSkipNavigations());
         }
 
         [ConditionalFact]
@@ -333,8 +302,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
                 .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
-            Assert.Empty(manyToManyFirst.Metadata.GetSkipNavigations());
-            Assert.Empty(manyToManySecond.Metadata.GetSkipNavigations());
         }
 
         [ConditionalFact]

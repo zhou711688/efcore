@@ -94,6 +94,17 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                     foreignKey.UpdateConfigurationSource(configurationSource);
                 }
 
+                if (foreignKey != Metadata.ForeignKey
+                    && Metadata.AssociationEntityType?.IsAutomaticallyCreatedAssociationEntityType == true)
+                {
+                    // Have reset the foreign key of a skip navigation on one side of an
+                    // automatically created association entity. That entity is only
+                    // useful if both sides are configured - so remove that
+                    // entity. This will remove the Inverse's foreign key as well.
+                    Metadata.AssociationEntityType.Model.Builder.RemoveAssociationEntityIfAutomaticallyCreated(
+                        Metadata.AssociationEntityType, removeSkipNavigations: false, configurationSource);
+                }
+
                 Metadata.SetForeignKey(foreignKey, configurationSource);
                 return this;
             }
@@ -122,7 +133,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             return (Metadata.DeclaringEntityType
                     == (Metadata.IsOnDependent ? foreignKey.DeclaringEntityType : foreignKey.PrincipalEntityType))
                             && (Metadata.Inverse?.AssociationEntityType == null
-                                || Metadata.Inverse?.AssociationEntityType?.IsAutomaticallyCreatedAssociationEntityType == true
+                                || Metadata.Inverse.AssociationEntityType.IsAutomaticallyCreatedAssociationEntityType == true
                                 || Metadata.Inverse.AssociationEntityType
                                 == (Metadata.IsOnDependent ? foreignKey.PrincipalEntityType : foreignKey.DeclaringEntityType));
         }

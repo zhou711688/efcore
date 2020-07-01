@@ -23,7 +23,7 @@ using Xunit;
 // ReSharper disable InconsistentNaming
 namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 {
-    public class ManyToManyConventionTest
+    public class ManyToManyAssociationEntityTypeConventionTest
     {
         [ConditionalFact]
         public void Association_entity_type_is_not_created_for_self_association()
@@ -41,6 +41,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManySelf).GetProperty(nameof(ManyToManySelf.ManyToManySelf2))),
                 manyToManySelf.Metadata,
                 ConfigurationSource.Convention);
+            firstSkipNav.HasInverse(secondSkipNav.Metadata, ConfigurationSource.Convention);
 
             RunConvention(firstSkipNav);
 
@@ -49,7 +50,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         }
 
         [ConditionalFact]
-        public void Association_entity_type_is_not_created_when_no_matching_skip_navigation()
+        public void Association_entity_type_is_not_created_when_no_inverse_skip_navigation()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
@@ -63,7 +64,11 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManyFirst).GetProperty(nameof(ManyToManyFirst.ManyToManySeconds))),
                 manyToManySecond.Metadata,
                 ConfigurationSource.Convention);
-            // do not create second skipNav
+            var skipNavOnSecond = manyToManySecond.HasSkipNavigation(
+                new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
+                manyToManyFirst.Metadata,
+                ConfigurationSource.Convention);
+            // do not set SkipNav's as inverses of one another
 
             RunConvention(skipNavOnFirst);
 
@@ -91,6 +96,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
                 manyToManyFirst.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnFirst.HasInverse(skipNavOnSecond.Metadata, ConfigurationSource.Convention);
 
             RunConvention(skipNavOnFirst);
 
@@ -99,7 +105,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         }
 
         [ConditionalFact]
-        public void Association_entity_type_is_not_created_when_matching_skip_navigation_is_not_collection()
+        public void Association_entity_type_is_not_created_when_inverse_skip_navigation_is_not_collection()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
@@ -118,6 +124,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 manyToManyFirst.Metadata,
                 ConfigurationSource.Convention,
                 collection: false);
+            skipNavOnFirst.HasInverse(skipNavOnSecond.Metadata, ConfigurationSource.Convention);
 
             RunConvention(skipNavOnFirst);
 
@@ -144,6 +151,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
                 manyToManyFirst.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnFirst.HasInverse(skipNavOnSecond.Metadata, ConfigurationSource.Convention);
 
             // assign a non-null foreign key to skipNavOnFirst to make it appear to be "in use"
             var leftFK = manyToManyJoin.HasRelationship(
@@ -160,7 +168,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         }
 
         [ConditionalFact]
-        public void Association_entity_type_is_not_created_when_matching_skip_navigation_already_in_use()
+        public void Association_entity_type_is_not_created_when_inverse_skip_navigation_already_in_use()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
@@ -178,6 +186,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
                 manyToManyFirst.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnFirst.HasInverse(skipNavOnSecond.Metadata, ConfigurationSource.Convention);
 
             // assign a non-null foreign key to skipNavOnSecond to make it appear to be "in use"
             var rightFK = manyToManyJoin.HasRelationship(
@@ -211,6 +220,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                 new MemberIdentity(typeof(ManyToManySecond).GetProperty(nameof(ManyToManySecond.ManyToManyFirsts))),
                 manyToManyFirst.Metadata,
                 ConfigurationSource.Convention);
+            skipNavOnFirst.HasInverse(skipNavOnSecond.Metadata, ConfigurationSource.Convention);
 
             RunConvention(skipNavOnFirst);
 
@@ -265,8 +275,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             return context.ShouldStopProcessing() ? (InternalSkipNavigationBuilder)context.Result : skipNavBuilder;
         }
 
-        private ManyToManyConvention CreateManyToManyConvention()
-            => new ManyToManyConvention(CreateDependencies());
+        private ManyToManyAssociationEntityTypeConvention CreateManyToManyConvention()
+            => new ManyToManyAssociationEntityTypeConvention(CreateDependencies());
 
         private ProviderConventionSetBuilderDependencies CreateDependencies()
             => InMemoryTestHelpers.Instance.CreateContextServices().GetRequiredService<ProviderConventionSetBuilderDependencies>()
