@@ -1837,7 +1837,11 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
 
                 modelBuilder.Entity<Product>();
                 modelBuilder.Entity<Category>()
-                    .HasMany(o => o.Products).WithMany(c => c.Categories);
+                    .HasMany(o => o.Products)
+                    .WithMany(c => c.Categories)
+                    .UsingEntity<ProductCategory>(
+                        pcb => pcb.HasOne(pc => pc.Product).WithMany(),
+                        pcb => pcb.HasOne(pc => pc.Category).WithMany(c => c.ProductCategories));
 
                 Assert.Equal(
                     CoreStrings.ConflictingRelationshipNavigation(
@@ -1860,12 +1864,11 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
                 modelBuilder.Entity<Nob>().HasOne(e => e.Hob).WithOne(e => e.Nob);
 
                 // Now that Nob.Hob and Hob.Nob are used, Nob.Hobs and Hob.Nobs
-                // are no longer ambiguous and so we automatically create the many-to-many
-                // relationship. We want to test that the HasMany().WithOne() call
-                // causes a clash with the 1:1 relationship set up above. But if we
-                // did not call Ignore below, it would report a clash with the
-                // automatic many-to-many instead.
-                modelBuilder.Entity<Hob>().Ignore(e => e.Nobs);
+                // are no longer ambiguous and we do implicitly create the N:N
+                // relationship between them. But this can be silently overridden
+                // by the more explicit HasMany().WithOne() call below. So we do
+                // not see a clash with that relationship, only with the 1:1
+                // relationship configured above.
 
                 var dependentType = model.FindEntityType(typeof(Hob));
                 var principalType = model.FindEntityType(typeof(Nob));

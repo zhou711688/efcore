@@ -97,6 +97,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders
         {
             if (((Model)LeftEntityType.Model).IsShared(joinEntity))
             {
+                //TODO #9914 - when the generic version of "please use the shared-type entity type version of this API"
+                // is available then update to use that.
                 throw new InvalidOperationException(
                     CoreStrings.DoNotUseUsingEntityOnSharedClrType(joinEntity.GetType().Name));
             }
@@ -106,7 +108,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders
                     ?? RightNavigation.ForeignKey?.DeclaringEntityType);
             if (existingAssociationEntityType != null)
             {
-                ModelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
+                ModelBuilder.RemoveAssociationEntityIfCreatedImplicitly(
                     existingAssociationEntityType, removeSkipNavigations: false, ConfigurationSource.Explicit);
             }
 

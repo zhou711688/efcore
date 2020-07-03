@@ -3055,7 +3055,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         ///     any release. You should only use it directly in your code with extreme caution and knowing that
         ///     doing so can result in application failures when updating to a new Entity Framework Core release.
         /// </summary>
-        public virtual bool IsAutomaticallyCreatedAssociationEntityType
+        public virtual bool IsImplicitlyCreatedAssociationEntityType
             => GetConfigurationSource() == ConfigurationSource.Convention
                 && ClrType == typeof(Dictionary<string, object>);
 

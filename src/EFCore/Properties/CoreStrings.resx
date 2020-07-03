@@ -1421,15 +1421,6 @@
   <data name="UnhandledNavigationBase" xml:space="preserve">
     <value>Unhandled 'INavigationBase' of type '{type}'.</value>
   </data>
-  <data name="SkipNavigationForAssociationEntityTypeHasNoInverse" xml:space="preserve">
-    <value>Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is not set. The inverse should be the other skip navigation, '{otherEntityType}.{otherSkipNavigationName}'.</value>
-  </data>
-  <data name="SkipNavigationForAssociationEntityTypeWrongInverse" xml:space="preserve">
-    <value>Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is '{inverseEntityType}.{inverseSkipNavigationName}', but it should be '{otherEntityType}.{otherSkipNavigationName}'.</value>
-  </data>
-  <data name="UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType" xml:space="preserve">
-    <value>Cannot create a foreign key for skip navigation '{declaringEntityType}.{skipNavigationName}' on association entity type '{associationEntityType}'. Ensure '{declaringEntityType}' has a primary key and is not ignored in the model.</value>
-  </data>
   <data name="DoNotUseUsingEntityOnSharedClrType" xml:space="preserve">
     <value>Cannot use UsingEntity() passing type '{clrType}' because the model contains shared entity type(s) with same type. Use a type which uniquely defines an entity type.</value>
   </data>

@@ -2709,30 +2709,6 @@ namespace Microsoft.EntityFrameworkCore.Diagnostics
                 type);
 
         /// <summary>
-        ///     Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is not set. The inverse should be the other skip navigation, '{otherEntityType}.{otherSkipNavigationName}'.
-        /// </summary>
-        public static string SkipNavigationForAssociationEntityTypeHasNoInverse([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object otherEntityType, [CanBeNull] object otherSkipNavigationName)
-            => string.Format(
-                GetString("SkipNavigationForAssociationEntityTypeHasNoInverse", nameof(declaringEntityType), nameof(skipNavigationName), nameof(otherEntityType), nameof(otherSkipNavigationName)),
-                declaringEntityType, skipNavigationName, otherEntityType, otherSkipNavigationName);
-
-        /// <summary>
-        ///     Cannot use using skip navigation '{declaringEntityType}.{skipNavigationName}' to create an association entity type. Its inverse is '{inverseEntityType}.{inverseSkipNavigationName}', but it should be '{otherEntityType}.{otherSkipNavigationName}'.
-        /// </summary>
-        public static string SkipNavigationForAssociationEntityTypeWrongInverse([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object inverseEntityType, [CanBeNull] object inverseSkipNavigationName, [CanBeNull] object otherEntityType, [CanBeNull] object otherSkipNavigationName)
-            => string.Format(
-                GetString("SkipNavigationForAssociationEntityTypeWrongInverse", nameof(declaringEntityType), nameof(skipNavigationName), nameof(inverseEntityType), nameof(inverseSkipNavigationName), nameof(otherEntityType), nameof(otherSkipNavigationName)),
-                declaringEntityType, skipNavigationName, inverseEntityType, inverseSkipNavigationName, otherEntityType, otherSkipNavigationName);
-
-        /// <summary>
-        ///     Cannot create a foreign key for skip navigation '{declaringEntityType}.{skipNavigationName}' on association entity type '{associationEntityType}'. Ensure '{declaringEntityType}' has a primary key and is not ignored in the model.
-        /// </summary>
-        public static string UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType([CanBeNull] object declaringEntityType, [CanBeNull] object skipNavigationName, [CanBeNull] object associationEntityType)
-            => string.Format(
-                GetString("UnableToCreateSkipNavigationForeignKeyOnAssociationEntityType", nameof(declaringEntityType), nameof(skipNavigationName), nameof(associationEntityType)),
-                declaringEntityType, skipNavigationName, associationEntityType);
-
-        /// <summary>
         ///     Cannot use UsingEntity() passing type '{clrType}' because the model contains shared entity type(s) with same type. Use a type which uniquely defines an entity type.
         /// </summary>
         public static string DoNotUseUsingEntityOnSharedClrType([CanBeNull] object clrType)

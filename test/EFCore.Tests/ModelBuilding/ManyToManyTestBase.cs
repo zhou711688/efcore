@@ -134,9 +134,9 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
                 var manyToManyA = model.FindEntityType(typeof(AutomaticManyToManyA));
                 var manyToManyB = model.FindEntityType(typeof(AutomaticManyToManyB));
                 var joinEntityType = model.GetEntityTypes()
-                    .Where(et => ((EntityType)et).IsAutomaticallyCreatedAssociationEntityType)
+                    .Where(et => ((EntityType)et).IsImplicitlyCreatedAssociationEntityType)
                     .Single();
-                Assert.Equal("Join_AutomaticManyToManyB_AutomaticManyToManyA", joinEntityType.Name);
+                Assert.Equal("Join_AutomaticManyToManyA_AutomaticManyToManyB", joinEntityType.Name);
 
                 var navigationOnManyToManyA = manyToManyA.GetSkipNavigations().Single();
                 var navigationOnManyToManyB = manyToManyB.GetSkipNavigations().Single();
@@ -156,8 +156,8 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
                 var key = joinEntityType.FindPrimaryKey();
                 Assert.Equal(
                     new[] {
-                        nameof(AutomaticManyToManyB) + "_" + nameof(AutomaticManyToManyB.Id),
-                        nameof(AutomaticManyToManyA) + "_" + nameof(AutomaticManyToManyA.Id) },
+                        nameof(AutomaticManyToManyA) + "_" + nameof(AutomaticManyToManyA.Id),
+                        nameof(AutomaticManyToManyB) + "_" + nameof(AutomaticManyToManyB.Id) },
                     key.Properties.Select(p => p.Name));
 
                 modelBuilder.FinalizeModel();
@@ -176,7 +176,7 @@ namespace Microsoft.EntityFrameworkCore.ModelBuilding
                 Assert.NotNull(hob);
                 Assert.NotNull(nob);
                 Assert.Empty(model.GetEntityTypes()
-                    .Where(et => ((EntityType)et).IsAutomaticallyCreatedAssociationEntityType));
+                    .Where(et => ((EntityType)et).IsImplicitlyCreatedAssociationEntityType));
 
                 Assert.Empty(hob.GetSkipNavigations());
                 Assert.Empty(nob.GetSkipNavigations());

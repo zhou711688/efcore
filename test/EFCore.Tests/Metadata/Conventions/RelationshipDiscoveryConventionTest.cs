@@ -239,7 +239,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         }
 
         [ConditionalFact]
-        public void Many_to_many_bidirectional_is_not_discovered_if_self_association()
+        public void Many_to_many_skip_navigations_are_not_discovered_if_self_association()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var manyToManySelf = modelBuilder.Entity(typeof(ManyToManySelf), ConfigurationSource.Convention);
@@ -248,14 +248,11 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
             RunConvention(manyToManySelf);
 
-            Assert.Empty(manyToManySelf.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
             Assert.Empty(manyToManySelf.Metadata.GetSkipNavigations());
         }
 
-
         [ConditionalFact]
-        public void Many_to_many_bidirectional_is_not_discovered_if_relationship_should_be_on_ancestors()
+        public void Many_to_many_skip_navigations_are_not_discovered_if_relationship_should_be_on_ancestors()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var derivedManyToManyFirst = modelBuilder.Entity(typeof(DerivedManyToManyFirst), ConfigurationSource.Convention);
@@ -266,46 +263,12 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
             RunConvention(derivedManyToManyFirst);
 
-            Assert.Empty(derivedManyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
             Assert.Empty(derivedManyToManyFirst.Metadata.GetSkipNavigations());
             Assert.Empty(derivedManyToManySecond.Metadata.GetSkipNavigations());
         }
 
         [ConditionalFact]
-        public void Many_to_many_bidirectional_is_not_discovered_if_missing_left_primary_key()
-        {
-            var modelBuilder = CreateInternalModeBuilder();
-            var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
-            var manyToManySecond = modelBuilder.Entity(typeof(ManyToManySecond), ConfigurationSource.Convention);
-
-            // left PK not defined
-            manyToManySecond.PrimaryKey(new[] { nameof(ManyToManySecond.Id) }, ConfigurationSource.Convention);
-
-            RunConvention(manyToManyFirst);
-
-            Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
-        }
-
-        [ConditionalFact]
-        public void Many_to_many_bidirectional_is_not_discovered_if_missing_right_primary_key()
-        {
-            var modelBuilder = CreateInternalModeBuilder();
-            var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
-            var manyToManySecond = modelBuilder.Entity(typeof(ManyToManySecond), ConfigurationSource.Convention);
-
-            manyToManyFirst.PrimaryKey(new[] { nameof(ManyToManyFirst.Id) }, ConfigurationSource.Convention);
-            // right PK not defined
-
-            RunConvention(manyToManyFirst);
-
-            Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
-        }
-
-        [ConditionalFact]
-        public void Many_to_many_bidirectional_is_discovered()
+        public void Many_to_many_bidirectional_sets_up_skip_navigations_but_not_association_entity_type()
         {
             var modelBuilder = CreateInternalModeBuilder();
             var manyToManyFirst = modelBuilder.Entity(typeof(ManyToManyFirst), ConfigurationSource.Convention);
@@ -315,11 +278,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             manyToManySecond.PrimaryKey(new[] { nameof(ManyToManySecond.Id) }, ConfigurationSource.Convention);
 
             RunConvention(manyToManyFirst);
-
-            var joinEntityType = manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Single(et => et.IsAutomaticallyCreatedAssociationEntityType);
-
-            Assert.Equal("Join_ManyToManyFirst_ManyToManySecond", joinEntityType.Name);
 
             var navigationOnManyToManyFirst = manyToManyFirst.Metadata.GetSkipNavigations().Single();
             var navigationOnManyToManySecond = manyToManySecond.Metadata.GetSkipNavigations().Single();
@@ -328,20 +286,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             Assert.Same(navigationOnManyToManyFirst.Inverse, navigationOnManyToManySecond);
             Assert.Same(navigationOnManyToManySecond.Inverse, navigationOnManyToManyFirst);
 
-            var manyToManyFirstForeignKey = navigationOnManyToManyFirst.ForeignKey;
-            var manyToManySecondForeignKey = navigationOnManyToManySecond.ForeignKey;
-            Assert.NotNull(manyToManyFirstForeignKey);
-            Assert.NotNull(manyToManySecondForeignKey);
-            Assert.Equal(2, joinEntityType.GetForeignKeys().Count());
-            Assert.Equal(manyToManyFirstForeignKey.DeclaringEntityType, joinEntityType);
-            Assert.Equal(manyToManySecondForeignKey.DeclaringEntityType, joinEntityType);
-
-            var key = joinEntityType.FindPrimaryKey();
-            Assert.Equal(
-                new[] {
-                        nameof(ManyToManyFirst) + "_" + nameof(ManyToManyFirst.Id),
-                        nameof(ManyToManySecond) + "_" + nameof(ManyToManySecond.Id) },
-                key.Properties.Select(p => p.Name));
+            Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]

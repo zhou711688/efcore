@@ -72,7 +72,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         private void RemoveNavigationlessForeignKeys(IConventionModelBuilder modelBuilder)
         {
             foreach (var entityType in modelBuilder.Metadata.GetEntityTypes()
-                .Where(e => !((EntityType)e).IsAutomaticallyCreatedAssociationEntityType))
+                .Where(e => !((EntityType)e).IsImplicitlyCreatedAssociationEntityType))
             {
                 foreach (var foreignKey in entityType.GetDeclaredForeignKeys().ToList())
                 {

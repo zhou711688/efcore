@@ -151,16 +151,38 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders
         {
             if (SkipNavigation != null)
             {
-                throw new InvalidOperationException(
-                    CoreStrings.ConflictingRelationshipNavigation(
-                        SkipNavigation.DeclaringEntityType.DisplayName() + "." + SkipNavigation.Name,
-                        RelatedEntityType.DisplayName() + (reference.Name == null
-                                                        ? ""
-                                                        : "." + reference.Name),
-                        SkipNavigation.DeclaringEntityType.DisplayName() + "." + SkipNavigation.Name,
-                        SkipNavigation.TargetEntityType.DisplayName() + (SkipNavigation.Inverse == null
-                                                                        ? ""
-                                                                        : "." + SkipNavigation.Inverse.Name)));
+                if (((EntityType)SkipNavigation.AssociationEntityType)?
+                    .IsImplicitlyCreatedAssociationEntityType != true)
+                {
+                    throw new InvalidOperationException(
+                        CoreStrings.ConflictingRelationshipNavigation(
+                            SkipNavigation.DeclaringEntityType.DisplayName() + "." + SkipNavigation.Name,
+                            RelatedEntityType.DisplayName() + (reference.Name == null
+                                                            ? ""
+                                                            : "." + reference.Name),
+                            SkipNavigation.DeclaringEntityType.DisplayName() + "." + SkipNavigation.Name,
+                            SkipNavigation.TargetEntityType.DisplayName() + (SkipNavigation.Inverse == null
+                                                                            ? ""
+                                                                            : "." + SkipNavigation.Inverse.Name)));
+                }
+
+                // This relationship was set up as many-to-many by convention but
+                // we are explicitly overriding it to set it up as a many-to-one.
+                var navigationName = SkipNavigation.Name;
+                var declaringEntityType = (EntityType)DeclaringEntityType;
+                declaringEntityType.Model.Builder
+                    .RemoveAssociationEntityIfCreatedImplicitly(
+                        (EntityType)SkipNavigation.AssociationEntityType,
+                        removeSkipNavigations: false,
+                        ConfigurationSource.Explicit);
+
+                Builder = declaringEntityType.Builder
+                    .HasRelationship(
+                        (EntityType)RelatedEntityType,
+                        navigationName,
+                        ConfigurationSource.Explicit,
+                        targetIsPrincipal: false);
+                SkipNavigation = null;
             }
 
             var foreignKey = Builder.Metadata;

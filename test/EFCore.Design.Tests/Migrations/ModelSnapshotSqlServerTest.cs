@@ -1069,19 +1069,19 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                 AddBoilerPlate(
                     GetHeading()
                     + @"
-            modelBuilder.Entity(""Join_ManyToManyRight_ManyToManyLeft"", b =>
+            modelBuilder.Entity(""Join_ManyToManyLeft_ManyToManyRight"", b =>
                 {
-                    b.Property<int?>(""ManyToManyRight_Id"")
-                        .HasColumnType(""int"");
-
                     b.Property<int?>(""ManyToManyLeft_Id"")
                         .HasColumnType(""int"");
 
-                    b.HasKey(""ManyToManyRight_Id"", ""ManyToManyLeft_Id"");
+                    b.Property<int?>(""ManyToManyRight_Id"")
+                        .HasColumnType(""int"");
 
-                    b.HasIndex(""ManyToManyLeft_Id"");
+                    b.HasKey(""ManyToManyLeft_Id"", ""ManyToManyRight_Id"");
 
-                    b.ToTable(""Join_ManyToManyRight_ManyToManyLeft"");
+                    b.HasIndex(""ManyToManyRight_Id"");
+
+                    b.ToTable(""Join_ManyToManyLeft_ManyToManyRight"");
                 });
 
             modelBuilder.Entity(""Microsoft.EntityFrameworkCore.Migrations.ModelSnapshotSqlServerTest+ManyToManyLeft"", b =>
@@ -1114,7 +1114,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                     b.ToTable(""ManyToManyRight"");
                 });
 
-            modelBuilder.Entity(""Join_ManyToManyRight_ManyToManyLeft"", b =>
+            modelBuilder.Entity(""Join_ManyToManyLeft_ManyToManyRight"", b =>
                 {
                     b.HasOne(""Microsoft.EntityFrameworkCore.Migrations.ModelSnapshotSqlServerTest+ManyToManyLeft"", null)
                         .WithMany()
@@ -1130,27 +1130,27 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                 });", usingSystem: true),
                 model =>
                 {
-                    var associationEntity = model.FindEntityType("Join_ManyToManyRight_ManyToManyLeft");
+                    var associationEntity = model.FindEntityType("Join_ManyToManyLeft_ManyToManyRight");
                     Assert.NotNull(associationEntity);
                     Assert.Collection(associationEntity.GetDeclaredProperties(),
                         p =>
                         {
-                            Assert.Equal("ManyToManyRight_Id", p.Name);
+                            Assert.Equal("ManyToManyLeft_Id", p.Name);
                             Assert.True(p.IsShadowProperty());
                         },
                         p =>
                         {
-                            Assert.Equal("ManyToManyLeft_Id", p.Name);
+                            Assert.Equal("ManyToManyRight_Id", p.Name);
                             Assert.True(p.IsShadowProperty());
                         });
                     Assert.Collection(associationEntity.FindDeclaredPrimaryKey().Properties,
                         p =>
                         {
-                            Assert.Equal("ManyToManyRight_Id", p.Name);
+                            Assert.Equal("ManyToManyLeft_Id", p.Name);
                         },
                         p =>
                         {
-                            Assert.Equal("ManyToManyLeft_Id", p.Name);
+                            Assert.Equal("ManyToManyRight_Id", p.Name);
                         });
                     Assert.Collection(associationEntity.GetDeclaredForeignKeys(),
                         fk =>

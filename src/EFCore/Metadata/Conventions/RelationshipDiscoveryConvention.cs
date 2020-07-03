@@ -755,8 +755,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
                     var modelBuilder = associationEntityType.Model.Builder;
                     // The PropertyInfo underlying this skip navigation has become
                     // ambiguous since we used it, so remove the association entity
-                    // if it was automatically created.
-                    if (modelBuilder.RemoveAssociationEntityIfAutomaticallyCreated(
+                    // if it was implicitly created.
+                    if (modelBuilder.RemoveAssociationEntityIfCreatedImplicitly(
                             associationEntityType, removeSkipNavigations: true, ConfigurationSource.Convention) == null)
                     {
                         // Navigations of higher configuration source are not ambiguous
@@ -829,10 +829,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             // also sets rightSkipNavigation's inverse
             leftSkipNavigation.Builder.HasInverse(rightSkipNavigation, fromDataAnnotation: false);
 
-            ((InternalModelBuilder)entityTypeBuilder.ModelBuilder).HasAutomaticAssociationEntity(
-                (SkipNavigation)leftSkipNavigation,
-                (SkipNavigation)rightSkipNavigation,
-                ConfigurationSource.Convention);
+            // the implicit many-to-many association entity type will be created
+            // and configured by ManyToManyAssocationEntityTypeConvention.
         }
 
         /// <summary>

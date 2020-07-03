@@ -46,7 +46,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(firstSkipNav);
 
             Assert.Empty(manyToManySelf.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -73,7 +73,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -101,7 +101,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -129,7 +129,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -164,7 +164,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -199,7 +199,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             Assert.Empty(manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Where(et => et.IsAutomaticallyCreatedAssociationEntityType));
+                .Where(et => et.IsImplicitlyCreatedAssociationEntityType));
         }
 
         [ConditionalFact]
@@ -225,7 +225,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             RunConvention(skipNavOnFirst);
 
             var joinEntityType = manyToManyFirst.Metadata.Model.GetEntityTypes()
-                .Single(et => et.IsAutomaticallyCreatedAssociationEntityType);
+                .Single(et => et.IsImplicitlyCreatedAssociationEntityType);
 
             Assert.Equal("Join_ManyToManyFirst_ManyToManySecond", joinEntityType.Name);
 

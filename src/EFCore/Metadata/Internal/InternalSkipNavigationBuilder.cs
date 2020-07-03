@@ -94,14 +94,15 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                     foreignKey.UpdateConfigurationSource(configurationSource);
                 }
 
-                if (foreignKey != Metadata.ForeignKey
-                    && Metadata.AssociationEntityType?.IsAutomaticallyCreatedAssociationEntityType == true)
+                if (Metadata.AssociationEntityType != null
+                    && foreignKey?.DeclaringEntityType != Metadata.AssociationEntityType)
                 {
                     // Have reset the foreign key of a skip navigation on one side of an
-                    // automatically created association entity. That entity is only
-                    // useful if both sides are configured - so remove that
-                    // entity. This will remove the Inverse's foreign key as well.
-                    Metadata.AssociationEntityType.Model.Builder.RemoveAssociationEntityIfAutomaticallyCreated(
+                    // association entity type to a different entity type. An implicit
+                    // association entity type is only useful if both sides are
+                    // configured - so, if it is implicit, remove that entity type
+                    // (which will also remove the other skip navigation's foreign key).
+                    Metadata.AssociationEntityType.Model.Builder.RemoveAssociationEntityIfCreatedImplicitly(
                         Metadata.AssociationEntityType, removeSkipNavigations: false, configurationSource);
                 }
 
@@ -133,7 +134,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             return (Metadata.DeclaringEntityType
                     == (Metadata.IsOnDependent ? foreignKey.DeclaringEntityType : foreignKey.PrincipalEntityType))
                             && (Metadata.Inverse?.AssociationEntityType == null
-                                || Metadata.Inverse.AssociationEntityType.IsAutomaticallyCreatedAssociationEntityType == true
+                                || Metadata.Inverse.AssociationEntityType.IsImplicitlyCreatedAssociationEntityType == true
                                 || Metadata.Inverse.AssociationEntityType
                                 == (Metadata.IsOnDependent ? foreignKey.PrincipalEntityType : foreignKey.DeclaringEntityType));
         }
