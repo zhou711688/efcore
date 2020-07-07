@@ -35,6 +35,11 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
     /// </summary>
     public class Model : ConventionAnnotatable, IMutableModel, IConventionModel
     {
+        /// <summary>
+        /// The CLR type that is used for property bag entity types when no other type is specified.
+        /// </summary>
+        public static readonly Type DefaultPropertyBagType = typeof(Dictionary<string, object>);
+
         private readonly SortedDictionary<string, EntityType> _entityTypes
             = new SortedDictionary<string, EntityType>(StringComparer.Ordinal);
 
@@ -53,7 +58,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         private readonly Dictionary<string, ConfigurationSource> _ignoredTypeNames
             = new Dictionary<string, ConfigurationSource>(StringComparer.Ordinal);
 
-        private readonly HashSet<Type> _sharedEntityClrTypes = new HashSet<Type>();
+        private readonly HashSet<Type> _sharedEntityClrTypes = new HashSet<Type>() { DefaultPropertyBagType };
 
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to

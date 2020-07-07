@@ -104,7 +104,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             var associationEntityTypeBuilder =
                 model.AddEntityType(
                     associationEntityTypeName,
-                    typeof(Dictionary<string, object>),
+                    Model.DefaultPropertyBagType,
                     ConfigurationSource.Convention).Builder;
 
             // Create left and right foreign keys from the outer entity types to

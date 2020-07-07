@@ -3057,7 +3057,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         /// </summary>
         public virtual bool IsImplicitlyCreatedAssociationEntityType
             => GetConfigurationSource() == ConfigurationSource.Convention
-                && ClrType == typeof(Dictionary<string, object>);
+                && ClrType == Model.DefaultPropertyBagType;
 
         #endregion
 
