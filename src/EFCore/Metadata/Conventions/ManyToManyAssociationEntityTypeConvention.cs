@@ -17,7 +17,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
     ///     a many-to-many association entity with suitable foreign keys, sets the two
     ///     matching skip navigations to use those foreign keys.
     /// </summary>
-    public class ManyToManyAssociationEntityTypeConvention : ISkipNavigationAddedConvention
+    public class ManyToManyAssociationEntityTypeConvention : ISkipNavigationAddedConvention, ISkipNavigationInverseChangedConvention
     {
         private const string AssociationEntityTypeNameTemplate = "Join_{0}_{1}";
         private const string AssociationPropertyNameTemplate = "{0}_{1}";
@@ -36,11 +36,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         /// </summary>
         protected virtual ProviderConventionSetBuilderDependencies Dependencies { get; }
 
-        /// <summary>
-        ///     Called after a skip navigation is added to the entity type.
-        /// </summary>
-        /// <param name="skipNavigationBuilder"> The builder for the skip navigation. </param>
-        /// <param name="context"> Additional information associated with convention execution. </param>
+        /// <inheritdoc />
         public virtual void ProcessSkipNavigationAdded(
             IConventionSkipNavigationBuilder skipNavigationBuilder,
             IConventionContext<IConventionSkipNavigationBuilder> context)
@@ -48,7 +44,28 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             Check.NotNull(skipNavigationBuilder, nameof(skipNavigationBuilder));
             Check.NotNull(context, nameof(context));
 
-            var skipNavigation = skipNavigationBuilder.Metadata;
+            CreateAssociationEntityType(skipNavigationBuilder);
+        }
+
+        /// <inheritdoc />
+        public virtual void ProcessSkipNavigationInverseChanged(
+            IConventionSkipNavigationBuilder skipNavigationBuilder,
+            IConventionSkipNavigation inverse,
+            IConventionSkipNavigation oldInverse,
+            IConventionContext<IConventionSkipNavigation> context)
+        {
+            Check.NotNull(skipNavigationBuilder, nameof(skipNavigationBuilder));
+            Check.NotNull(inverse, nameof(inverse));
+            Check.NotNull(oldInverse, nameof(oldInverse));
+            Check.NotNull(context, nameof(context));
+
+            CreateAssociationEntityType(skipNavigationBuilder);
+        }
+
+        private void CreateAssociationEntityType(
+            IConventionSkipNavigationBuilder skipNavigationBuilder)
+        {
+            var skipNavigation = (SkipNavigation)skipNavigationBuilder.Metadata;
             if (skipNavigation.AssociationEntityType != null)
             {
                 return;
@@ -78,15 +95,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
             Check.DebugAssert(inverseSkipNavigation.Inverse == skipNavigation,
                 "Inverse's inverse should be the original skip navigation");
 
-            CreateAssociationEntityType(
-                (SkipNavigation)skipNavigation,
-                (SkipNavigation)inverseSkipNavigation);
-        }
-
-        private void CreateAssociationEntityType(
-            SkipNavigation skipNavigation,
-            SkipNavigation inverseSkipNavigation)
-        {
             var model = skipNavigation.DeclaringEntityType.Model;
             var declaringEntityType = skipNavigation.DeclaringEntityType;
             var inverseEntityType = inverseSkipNavigation.DeclaringEntityType;
